@@ -1,0 +1,53 @@
+<!doctype HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="Jogging Route Generator">
+  <meta name="keywords" content="runroute, jogging-route, running-route, places-to-run">
+  <meta name="author" content="Anser Ghazi">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="../../content/css/application_style.css">
+
+  <link href="https://fonts.googleapis.com/css2?family=Ruda:wght@900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat+Subrayada:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400&display=swap" rel="stylesheet">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDMgPOpOfZXYPo1XdCjruS6MwK8aBhJm40&callback=initMap&libraries=&v=weekly"
+    defer
+  ></script>
+
+
+  <title>RunRoute | Route Generator</title>
+  <script src="https://kit.fontawesome.com/21a0f11fac.js" crossorigin="anonymous"></script>
+</head>
+  <body>
+    <div class="sidebar">
+      <h1><a class="title" href="../../index.html">RunRoute</a></h1>
+
+      <div class="entryinterface">
+        <div class="entry">
+          <form>
+            <input class="location" type="text" id="homeloc" name="homeloc" placeholder="Search a location"><br>
+          </form>
+        </div>
+        <div class="entry">
+          <form>
+            <input type="range" min="1" max="20" value="5" class="slider" id="distance">
+            <input type="text" id="homeloc" name="homeloc" value="0" class="distanceInput">
+            <p class="distanceUnits">KM</p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="mapinterface">
+      <div id="map">
+      </div>
+    </div>
+  <body>
+</html>

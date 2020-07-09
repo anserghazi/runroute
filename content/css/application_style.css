@@ -1,0 +1,108 @@
+/* application_style */
+
+html {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100%;
+  background-color:  #feffeb;
+}
+
+body {
+  overflow-x: hidden;
+  margin: 0px !important;
+}
+
+div form p {
+  display: inline;
+  margin: -10px;
+  padding: 0px;
+}
+
+.title {
+  display: block;
+  text-decoration: none;
+  color: #ffffff;
+
+  font-family: 'Montserrat Subrayada', sans-serif;
+
+  /*font-family: 'Ruda', sans-serif; possible alt font */
+  font-size: 55px;
+  margin-left: 10px;
+}
+
+.sidebar {
+  position: fixed;
+  display: inline-block;
+  background-color:  #222632;
+  width: 35%;
+  min-width: 550px;
+  height: 100%;
+}
+
+.mapinterface {
+  float: right;
+  display: inline-block;
+  background-color: black;
+  width: 65%;
+}
+
+
+.entryinterface {
+  background-color: #464c5f;
+  align-items: center;
+}
+
+
+
+.entry {
+  margin-left: 15px;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  width: 100%;
+}
+
+.location {
+  width: 100%;
+  margin-left: -15px;
+  padding-top: -15px;
+  height: 40px;
+  border-style: none;
+  padding-left: 10px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 30px;
+  box-sizing: border-box;
+  background-image: url("../images/magnifying_glass.png");
+  background-repeat: no-repeat;
+  background-position: right;
+  margin-bottom: -10px;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 72%;
+  height: 5px;
+  outline: none;
+}
+
+.distanceInput {
+  display: inline;
+  width: 65px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 25px;
+  text-align: right;
+  margin-left: 15px;
+  margin-right: 10px;
+}
+
+.distanceUnits {
+  display: inline;
+  margin: 0px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 20px;
+  color: white;
+}
+
+#map {
+  height: 100%;
+}

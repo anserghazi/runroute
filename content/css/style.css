@@ -1,0 +1,142 @@
+html {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100%;
+  background-color:  #feffeb;
+}
+
+body {
+  overflow-x: hidden;
+  margin: 0px !important;
+}
+
+
+.header {
+  display: block;
+  position: relative;
+  background-color:  #222632;
+  left: -8px;
+  top: -21px;
+  width: 104%;
+}
+
+.mobile_header {
+  display: block;
+  position: relative;
+  background-color: #464c5f;
+  left: -8px;
+  top: -21px;
+  width: 110%;
+  height: 32px;
+  opacity: 0;
+  z-index: 0;
+}
+
+.content {
+  display: block;
+  position: relative;
+  background-color: #feffeb;
+  left: -8px;
+  top: -54px;
+  margin-bottom: 345px;
+  width: 102.5%;
+  height:1000px;
+  border-style: none;
+}
+
+.footer {
+  display: block;
+  position: absolute;
+  background-color: #131638;
+  left: 0px;
+  bottom: 0px;
+  width: 103%;
+  height: 400px;
+}
+
+
+.title {
+  text-decoration: none;
+  color: #ffffff;
+
+  font-family: 'Montserrat Subrayada', sans-serif;
+
+  /*font-family: 'Ruda', sans-serif; possible alt font */
+  font-size: 55px;
+  margin-left: 100px;
+  margin-right: 25px;
+}
+
+
+nav a {
+  font-family: 'Raleway', sans-serif;
+  font-size: 23px;
+  text-decoration: none;
+  color: #ffffff;
+  padding: 40px;
+  padding-top: 30px;
+  padding-bottom: 17px;
+
+}
+
+div h1, nav, li {
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+div nav {
+  position: relative;
+  float: right;
+  margin-right: 100px;
+  margin-top: 29px;
+  z-index: 1;
+}
+
+.content h2 {
+  font-size: 35px;
+}
+
+/* MEDIA QUERIES */
+
+@media only screen and (max-width: 1120px) {
+
+
+  .mobile_header {
+    opacity: 1;
+  }
+
+  .content {
+    left: -8px;
+    top: -21px;
+    margin-bottom: 279px;
+    width: 102.5%;
+    height: 800px;
+    border-style: none;
+  }
+
+  .footer {
+    height: 300px;
+  }
+
+  .title {
+    font-size: 25px;
+    margin-left: 10px;
+    margin-right: 4000px;
+  }
+
+  nav a {
+    margin-left: 10px;
+    margin-right: 10px;
+    padding-bottom: 0px;
+    padding: 0px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+  }
+
+  div nav {
+    float: left;
+    margin-top: -15px;
+    margin-left: -40px;
+    margin-right: 0px;
+  }
+}
