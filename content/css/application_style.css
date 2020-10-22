@@ -106,3 +106,9 @@ div form p {
 #map {
   height: 100%;
 }
+
+@media only screen and (max-width: 1120px) {
+
+.sidebar {
+  width: 98.5%;
+}
