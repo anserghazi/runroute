@@ -37,8 +37,10 @@
         </div>
         <div class="entry">
           <form>
-            <input type="range" min="1" max="20" value="5" class="slider" id="distance">
-            <input type="text" id="homeloc" name="homeloc" value="0" class="distanceInput">
+            <div class="rangeslider">
+              <input type="range" min="1" max="20" value="5" class="slider" id="sliderDistance" oninput="sliderFunction()">
+            </div>
+            <input type="text" id="distanceEntry" value="0" class="distanceInput" id="distanceEntry" oninput="sliderEntryFunction()">
             <p class="distanceUnits">KM</p>
           </form>
         </div>
@@ -49,5 +51,18 @@
       <div id="map">
       </div>
     </div>
-  <body>
+
+
+    <script>
+    function sliderFunction() {
+      var input = document.getElementById("sliderDistance").value;
+      document.getElementById("distanceEntry").value = input;
+    }
+
+    function sliderEntryFunction() {
+      var input = document.getElementById("distanceEntry").value;
+      document.getElementById("sliderDistance").value = input;
+    }
+    </script>
+  </body>
 </html>

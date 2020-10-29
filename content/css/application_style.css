@@ -78,13 +78,6 @@ div form p {
   margin-bottom: -10px;
 }
 
-.slider {
-  -webkit-appearance: none;
-  width: 72%;
-  height: 5px;
-  outline: none;
-}
-
 .distanceInput {
   display: inline;
   width: 65px;
@@ -102,6 +95,24 @@ div form p {
   font-size: 20px;
   color: white;
 }
+
+.rangeslider {
+  display: inline;
+  width: 10%;
+  }
+
+.slider {
+  -webkit-appearance: none;
+  width: 72%;
+  height: 5px;
+  outline: none;
+  opacity: 0.8;
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
 
 #map {
   height: 100%;
