@@ -1,6 +1,9 @@
-var rangeslider = document.getElementById("sliderDistance");
-var output = document.getElementById("distanceEntry");
-output.innerHTML = rangeslider.value;
-rangeslider.oninput = function() {
-    output.innerHTML = this.value;
+function sliderFunction() {
+    var input = document.getElementById("sliderDistance").value;
+    document.getElementById("distanceEntry").value = input;
+}
+
+function sliderEntryFunction() {
+    var input = document.getElementById("distanceEntry").value;
+    document.getElementById("sliderDistance").value = input;
 }

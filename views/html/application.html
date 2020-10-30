@@ -1,13 +1,12 @@
 <!doctype HTML>
 <html>
 <head>
+
   <title>RunRoute | Route Generator</title>
   <script
           src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbWSijROevJNakPfK6SYcYoGrafXWLwzA&callback=initMap&libraries=&v=weekly"
           defer
   ></script>
-  <script src="../../scripts/mapUI.js"></script>
-  <link rel="stylesheet" type="text/css" href="../../content/css/application_style.css">
 
   <meta charset="utf-8">
   <meta name="description" content="Jogging Route Generator">
@@ -15,22 +14,12 @@
   <meta name="author" content="Anser Ghazi">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
-
-
-
-
+  <link rel="stylesheet" type="text/css" href="../../content/css/application_style.css">
   <link href="https://fonts.googleapis.com/css2?family=Ruda:wght@900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Oswald&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat+Subrayada:wght@700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400&display=swap" rel="stylesheet">
 
-  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
-
-
-
-  <script src="https://kit.fontawesome.com/21a0f11fac.js" crossorigin="anonymous"></script>
 </head>
   <body>
     <div class="sidebar">
@@ -57,16 +46,10 @@
     <div id="map">
     </div>
 
-    <script>
-    function sliderFunction() {
-      var input = document.getElementById("sliderDistance").value;
-      document.getElementById("distanceEntry").value = input;
-    }
-
-    function sliderEntryFunction() {
-      var input = document.getElementById("distanceEntry").value;
-      document.getElementById("sliderDistance").value = input;
-    }
-    </script>
+    <script src="../../scripts/mapUI.js"></script>
+    <script src="../../scripts/sliderUI.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <script src="https://kit.fontawesome.com/21a0f11fac.js" crossorigin="anonymous"></script>
   </body>
 </html>
