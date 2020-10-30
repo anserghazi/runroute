@@ -39,14 +39,6 @@ div form p {
   height: 100%;
 }
 
-.mapinterface {
-  float: right;
-  display: inline-block;
-  background-color: black;
-  width: 65%;
-}
-
-
 .entryinterface {
   background-color: #464c5f;
   align-items: center;
@@ -115,7 +107,9 @@ div form p {
 
 
 #map {
-  height: 100%;
+  height: 938px;
+  width: 65%;
+  float: right;
 }
 
 @media only screen and (max-width: 1120px) {
