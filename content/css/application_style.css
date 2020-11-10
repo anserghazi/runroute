@@ -42,6 +42,7 @@ div form p {
 .entryinterface {
   background-color: #464c5f;
   align-items: center;
+  margin-bottom: -5px;
 }
 
 
@@ -53,6 +54,7 @@ div form p {
   padding-bottom: 15px;
   width: 100%;
 }
+
 
 .location {
   width: 100%;
@@ -80,6 +82,74 @@ div form p {
   margin-right: 10px;
 }
 
+.waypointsSubtitle {
+  display: block;
+  margin: 0px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 25px;
+  color: white;
+  margin-left: 7px;
+  margin-bottom: 10px;
+}
+
+div.gallery {
+  border: 1px solid #ccc;
+}
+
+div.gallery:hover {
+  border: 1px solid #777;
+}
+
+div.gallery img {
+  width: 100%;
+  height: auto;
+}
+
+div.desc {
+  padding: 15px;
+  text-align: center;
+  background-color: #939bb5;
+  color: black;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.responsive {
+  padding: 0px;
+  float: left;
+  width: 33.32%;
+}
+
+@media only screen and (max-width: 700px) {
+  .responsive {
+    width: 49.99999%;
+    margin: 6px 0;
+  }
+}
+
+@media only screen and (max-width: 500px) {
+  .responsive {
+    width: 100%;
+  }
+}
+
+.clearfix:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+
+
+
+
+
+.distanceInput:focus {
+  background-image: url("../images/selected_magnifying_glass.png");
+}
+
 .distanceUnits {
   display: inline;
   margin: 0px;
@@ -87,6 +157,8 @@ div form p {
   font-size: 20px;
   color: white;
 }
+
+
 
 .rangeslider {
   display: inline;
@@ -101,6 +173,8 @@ div form p {
   opacity: 0.8;
 }
 
+
+
 .slider:hover {
   opacity: 1;
 }
@@ -112,8 +186,6 @@ div form p {
   float: right;
 }
 
-@media only screen and (max-width: 1120px) {
 
-.sidebar {
-  width: 98.5%;
-}
+
+
