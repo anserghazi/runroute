@@ -1,5 +1,4 @@
 /* application_style */
-
 html {
   position: relative;
   overflow-x: hidden;
@@ -18,8 +17,8 @@ div form p {
   padding: 0px;
 }
 
-.title {
-  display: block;
+.title_name {
+  display: inline-block;
   text-decoration: none;
   color: #ffffff;
 
@@ -28,28 +27,44 @@ div form p {
   /*font-family: 'Ruda', sans-serif; possible alt font */
   font-size: 55px;
   margin-left: 10px;
+  float: left;
 }
 
-.sidebar {
-  position: fixed;
-  display: inline-block;
-  background-color:  #222632;
-  width: 35%;
-  min-width: 550px;
-  height: 100%;
+.current_location {
+  color: white;
+  font-family: 'Raleway', sans-serif;
+  font-size: 14px;
+  float: right;
+  padding: 0px;
+  margin-right: 20px;
+  margin-top: 7px;
 }
 
 .entryinterface {
   background-color: #464c5f;
   align-items: center;
   margin-bottom: -5px;
+  margin-top: 100px;
 }
 
+.title {
+  color: #222632;
+  font-family: 'Raleway', sans-serif;
+  font-size: 17px;
+}
 
+.sidebar {
+  position: fixed;
+  display: inline-block;
+  background-color:  #222632;
+  width: 32%;
+  min-width: 550px;
+  height: 100%;
+}
 
 .entry {
   margin-left: 15px;
-  margin-top: 25px;
+  margin-top: 20px;
   margin-bottom: 15px;
   padding-bottom: 15px;
   width: 100%;
@@ -146,9 +161,7 @@ div.desc {
 
 
 
-.distanceInput:focus {
-  background-image: url("../images/selected_magnifying_glass.png");
-}
+
 
 .distanceUnits {
   display: inline;
@@ -163,7 +176,7 @@ div.desc {
 .rangeslider {
   display: inline;
   width: 10%;
-  }
+}
 
 .slider {
   -webkit-appearance: none;
@@ -182,10 +195,139 @@ div.desc {
 
 #map {
   height: 938px;
-  width: 65%;
+  width: 68%;
   float: right;
+  display: inline-block;
+  margin: 0;
+  padding: 0;
 }
 
+
+h2 {
+  font-size: 22px;
+  margin: 0 0 5px 0;
+  color: white;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  height: 570px;
+  width: 610px;
+  overflow-y: scroll;
+  overflow: -moz-scrollbars-none;
+  -ms-overflow-style: none;
+}
+
+ul::-webkit-scrollbar {
+  width: 0 !important;
+  display: none;
+}
+
+li {
+  display: block;
+  background-color: #f1f1f1;
+  padding: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 25px;
+  font-family: 'Raleway', sans-serif;
+}
+
+li a {
+  text-decoration: none;
+  display: block;
+  padding: 10px 0px 10px 20px;
+  border: 1px solid #ccc;
+
+}
+
+#more {
+  width: 100%;
+  margin: 5px 0 0 0;
+}
+
+.selected_waypoint {
+  border: 2px solid;
+  padding: 0px 0px 0px 17px;
+  background-color: #cce6ff;
+}
+
+.deselected_waypoint {
+  text-decoration: none;
+  display: block;
+  padding: 2px;
+}
+
+li:hover {
+  background-color: white;
+}
+
+
+
+
+.location {
+  width: 100%;
+  margin-left: -15px;
+  padding-top: -15px;
+  height: 40px;
+  border-style: none;
+  padding-left: 10px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 30px;
+  box-sizing: border-box;
+  background-repeat: no-repeat;
+  background-position: right;
+  margin-bottom: -10px;
+  border-style: inset;
+}
+
+
+
+.submit {
+  display: inline-block;
+  border-radius: 4px;
+  border-color: #000090;
+  background-color: #008CBA;
+  border: none;
+  color: #FFFFFF;
+  text-align: center;
+  font-size: 28px;
+  padding: 20px;
+  width: 560px;
+  transition: all 0.5s;
+  cursor: pointer;
+  margin: 5px;
+  margin-left: 50px;
+  margin-top: 25px;
+  font-family: 'Raleway', sans-serif;
+}
+
+.submit span {
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  transition: 0.5s;
+}
+
+.submit span:after {
+  content: '\00bb';
+  position: absolute;
+  opacity: 0;
+  top: 0;
+  right: -20px;
+  transition: 0.5s;
+}
+
+.submit:hover span {
+  padding-right: 25px;
+}
+
+.submit:hover span:after {
+  opacity: 1;
+  right: 0;
+}
 
 
 

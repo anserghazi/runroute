@@ -1,10 +1,19 @@
-// This example requires the Places library. Include the libraries=places
-// parameter when you first load the API. For example:
-// <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBIwzALxUPNbatRBj3Xi1Uhp0fFzwWNBkE&libraries=places">
+var waypoint_name_list = [];
+
+// Create the map.
 function initMap() {
+    const directionsService = new google.maps.DirectionsService();
+    const directionsRenderer = new google.maps.DirectionsRenderer({
+        draggable: true,
+    });
+
+
+    var ppp = 43.6532;
+    var qqq = -79.3852;
+    var toronto = { lat: ppp, lng: qqq };
     const map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 43.852579, lng: -79.510094},
-        zoom: 13,
+        center: toronto,
+        zoom: 15,
         styles: [
             {
                 "stylers": [
@@ -38,78 +47,244 @@ function initMap() {
                 ]
             }
         ]
-
     });
 
+
+
+    // Create the search box and link it to the UI element.
     const input = document.getElementById("homeloc");
-    const autocomplete = new google.maps.places.Autocomplete(input);
-    // Bind the map's bounds (viewport) property to the autocomplete object,
-    // so that the autocomplete requests use the current map bounds for the
-    // bounds option in the request.
-    autocomplete.bindTo("bounds", map);
-
-    // Set the data fields to return when the user selects a place.
-    autocomplete.setFields(["address_components", "geometry", "icon", "name"]);
-    const infowindow = new google.maps.InfoWindow();
-    const infowindowContent = document.getElementById("infowindow-content");
-    infowindow.setContent(infowindowContent);
-    const marker = new google.maps.Marker({
-        map,
-        anchorPoint: new google.maps.Point(0, -29),
-    });
-    autocomplete.addListener("place_changed", () => {
-        infowindow.close();
-        marker.setVisible(false);
-        const place = autocomplete.getPlace();
-
-        if (!place.geometry) {
-            // User entered the name of a Place that was not suggested and
-            // pressed the Enter key, or the Place Details request failed.
-            window.alert("No details available for input: '" + place.name + "'");
+    const searchBox = new google.maps.places.SearchBox(input);
+    // Listen for the event fired when the user selects a prediction and retrieve
+    // more details for that place.
+    searchBox.addListener("places_changed", () => {
+        const places = searchBox.getPlaces();
+        if (places.length == 0) {
             return;
         }
-
-        // If the place has a geometry, then present it on a map.
-        if (place.geometry.viewport) {
-            map.fitBounds(place.geometry.viewport);
-        } else {
-            map.setCenter(place.geometry.location);
-            map.setZoom(17); // Why 17? Because it looks good.
-        }
-        marker.setPosition(place.geometry.location);
-        marker.setVisible(true);
-        let address = "";
-
-        if (place.address_components) {
-            address = [
-                (place.address_components[0] &&
-                    place.address_components[0].short_name) ||
-                "",
-                (place.address_components[1] &&
-                    place.address_components[1].short_name) ||
-                "",
-                (place.address_components[2] &&
-                    place.address_components[2].short_name) ||
-                "",
-            ].join(" ");
-        }
-        infowindowContent.children["place-icon"].src = place.icon;
-        infowindowContent.children["place-name"].textContent = place.name;
-        infowindowContent.children["place-address"].textContent = address;
-        infowindow.open(map, marker);
+        calculateAndDisplayRoute(directionsService, directionsRenderer);
+        nearbySearch();
     });
 
 
-    const distanceCircle = new google.maps.Circle({
-        strokeColor: "#FF0000",
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: "#FF0000",
-        fillOpacity: 0.35,
-        map,
-        center: place.center,
-        radius: 5,
-    });
 
+
+
+    directionsRenderer.setMap(map);
+    document.getElementById("submit").addEventListener("click", () => {
+        calculateAndDisplayRoute(directionsService, directionsRenderer);
+    });
+    directionsRenderer.setMap(map);
+
+    const onChangeHandler = function () {
+        calculateAndDisplayRoute(directionsService, directionsRenderer);
+    };
+
+
+    // Clear the waypoint list between different location searches
+    var clearWaypoints = function() {
+        waypoint_name_list.length = 0;
+    }
+
+
+    // Get user input (address and distance) and use those in the nearbySearch query
+    var nearbySearch = function() {
+        var address = document.getElementById("homeloc").value;
+        var distance = document.getElementById("sliderDistance").value;
+        var radius = distance * 1000 / 7;
+
+
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ address: address }, (results, status) => {
+
+            if (status === "OK") {
+                if (results[0]) {
+                    var last = {
+                        lat : results[0].geometry.location.lat(),
+                        lng : results[0].geometry.location.lng()
+                    }
+                    // Create the places service.
+                    const service = new google.maps.places.PlacesService(map);
+                    // Perform a nearby search.
+                    service.nearbySearch(
+
+                        { location: last, radius: radius, type: "park" },
+                        (results, status, pagination) => {
+                            if (status !== "OK") return;
+                            createList(results, map);
+
+                            if (pagination.hasNextPage) {
+                                getNextPage = pagination.nextPage;
+                            }
+                        }
+                    );
+
+                } else {
+                    alert("Geocode was not successful for the following reason: " + status);
+                }
+            } else {
+                window.alert("Geocoder failed due to: " + status);
+            }
+        });
 
     }
+
+
+    // Create a list of nearby waypoints with their place IDs that the user can select from
+    var createList = function(places) {
+
+        const placesList = document.getElementById("places");
+
+
+        if (placesList.childElementCount > 0) {
+            const x = placesList.childElementCount
+            for (i = 0; i < x; i++) {
+                var myobj = document.getElementById("apple" + i);
+                var my_link = document.getElementById("banana" + i);
+                my_link.className = "deselected_waypoint";
+                myobj.remove();
+            }
+        }
+
+        for (let i = 0, place; (place = places[i]); i++) {
+            var li = document.createElement("li");
+            var a = document.createElement("a");
+            var p = document.createElement("p");
+            li.innerHTML = place.name;
+            a.href = "#";
+            li.id = 'apple' + i;
+            a.id = 'banana' + i;
+            a.innerText = place.place_id;
+            li.appendChild(a);
+            placesList.appendChild(li);
+            document.getElementById("banana" + i).style.visibility = "hidden";
+            li.addEventListener('click', function(e){
+                clicked_id = e.target.id;
+                is_selected = e.target.className;
+                selected_waypoint(clicked_id, is_selected);
+            }, false);
+        }
+    }
+
+
+    // All of the asynchronous function calls are written below
+
+    document
+        .getElementById("submit")
+        .addEventListener("click", onChangeHandler);
+
+    document
+        .getElementById("homeloc")
+        .addEventListener("change", onChangeHandler);
+
+    document
+        .getElementById("homeloc")
+        .addEventListener("change", nearbySearch);
+
+    document
+        .getElementById("homeloc")
+        .addEventListener("change", clearWaypoints);
+
+    document
+        .getElementById("sliderDistance")
+        .addEventListener("change", nearbySearch);
+
+
+
+
+}
+
+
+
+// This function is called when the user clicks the UI button requesting
+// a geocode of a place ID.
+geocodePlaceId = (geocoder, place_ID) =>  {
+    geocoder.geocode({placeId: place_ID}, (results, status) => {
+        if (status === "OK") {
+            if (results[0]) {
+                if (!waypoint_name_list.includes(results[0].formatted_address)) {
+                    waypoint_name_list.push(results[0].formatted_address);
+
+                    // window.alert(waypoint_name_list);
+                }
+                else {
+                    var index = waypoint_name_list.indexOf(results[0].formatted_address);
+                    waypoint_name_list.splice(index, 1);
+                    // window.alert(waypoint_name_list);
+                }
+            } else {
+                window.alert("No results found");
+            }
+        } else {
+            window.alert("Geocoder failed due to: " + status);
+        }
+    });
+}
+
+
+// Make a list of all selected waypoints
+function selected_waypoint(clicked_id, is_selected) {
+
+    // Create the geocoder service.
+    const geocoder = new google.maps.Geocoder();
+
+
+    var entered_waypoints = document.getElementsByClassName("selected_waypoint")
+    entered_waypoints_list = []
+
+    for (i = 0; i < entered_waypoints.length; i++) {
+        entered_waypoints_list.push(entered_waypoints[i].firstChild.nextSibling.textContent)
+    }
+    var place_ID = document.getElementById(clicked_id).firstChild.nextSibling.textContent
+    // Update the list each time a waypoint is selected/deselected
+    if (is_selected == "deselected_waypoint") {
+        document.getElementById(clicked_id).setAttribute("class", "selected_waypoint");
+        entered_waypoints_list.push(place_ID);
+        geocodePlaceId(geocoder, place_ID)
+
+    } else if (is_selected == "selected_waypoint") {
+        document.getElementById(clicked_id).setAttribute("class", "deselected_waypoint");
+        entered_waypoints_list.pop(place_ID);
+        geocodePlaceId(geocoder, place_ID)
+
+    } else {
+        document.getElementById(clicked_id).setAttribute("class", "selected_waypoint");
+        entered_waypoints_list.push(place_ID);
+        geocodePlaceId(geocoder, place_ID)
+    }
+}
+
+
+
+// Create a route with a given location and waypoints
+function calculateAndDisplayRoute(directionsService, directionsRenderer) {
+    const waypts = [];
+
+    for (let i = 0; i < waypoint_name_list.length; i++) {
+        waypts.push({
+            location: waypoint_name_list[i],
+            stopover: true,
+        });
+
+    }
+
+    directionsService.route(
+        {
+            origin: document.getElementById("homeloc").value,
+            destination: document.getElementById("homeloc").value,
+            waypoints: waypts,
+            optimizeWaypoints: true,
+            travelMode: google.maps.TravelMode.WALKING,
+        },
+        (response, status) => {
+            if (status === "OK") {
+                directionsRenderer.setDirections(response);
+                const route = response.routes[0];
+
+
+
+            } else {
+                window.alert("Directions request failed due to " + status);
+            }
+        }
+    );
+}

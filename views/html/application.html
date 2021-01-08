@@ -5,7 +5,7 @@
   <title>RunRoute | Route Generator</title>
   <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
   <script
-          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD6GwFczr-o3WtpuOjwIqbThilZmlNH_zA&libraries=places&callback=initMap&libraries=places&v=weekly"
+          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAYmrpoOWCzar68Hf6eb5i5FxKEjYotok&libraries=places&callback=initMap&libraries=places&v=weekly"
           defer
   ></script>
   <script src="../../scripts/mapUI.js"></script>
@@ -25,100 +25,44 @@
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400&display=swap" rel="stylesheet">
 
 </head>
-  <body>
-    <div class="sidebar">
+<body>
+<div class="sidebar">
 
-      <h1><a class="title" href="../../index.html">RunRoute</a></h1>
-      <div class="entryinterface">
-        <div class="entry" id="entry">
-          <input id="homeloc" class="location" type="text" placeholder="Find a location" />
-        </div>
-
-        <div class="entry">
-          <div class="rangeslider">
-            <input type="range" min="1" max="20" value="5" class="slider" id="sliderDistance" oninput="sliderFunction()">
-          </div>
-          <input type="text" id="distanceEntry" value="0" class="distanceInput" id="distanceEntry" oninput="sliderEntryFunction()">
-          <p class="distanceUnits">KM</p>
-        </div>
-      </div>
-
-      <p class="waypointsSubtitle">Waypoints</p>
-
-      <div class="responsive">
-        <div class="gallery">
-          <a target="_blank" href="img_5terre.jpg">
-            <img src="../../content/images/untitled.png" alt="Cinque Terre" width="600" height="400">
-          </a>
-          <div class="desc">Add a description of the image here</div>
-        </div>
-      </div>
-
-
-      <div class="responsive">
-        <div class="gallery">
-          <a target="_blank" href="../../content/images/untitled.png">
-            <img src="../../content/images/untitled.png" alt="Forest" width="600" height="400">
-          </a>
-          <div class="desc">Add a description of the image here</div>
-        </div>
-      </div>
-
-      <div class="responsive">
-        <div class="gallery">
-          <a target="_blank" href="../../content/images/untitled.png">
-            <img src="../../content/images/untitled.png" alt="Northern Lights" width="600" height="400">
-          </a>
-          <div class="desc">Add a description of the image here</div>
-        </div>
-      </div>
-
-
-      <div class="clearfix"></div>
-      <div class="responsive">
-        <div class="gallery">
-          <a target="_blank" href="img_5terre.jpg">
-            <img src="../../content/images/untitled.png" alt="Cinque Terre" width="600" height="400">
-          </a>
-          <div class="desc">Add a description of the image here</div>
-        </div>
-      </div>
-
-
-      <div class="responsive">
-        <div class="gallery">
-          <a target="_blank" href="../../content/images/untitled.png">
-            <img src="../../content/images/untitled.png" alt="Forest" width="600" height="400">
-          </a>
-          <div class="desc">Add a description of the image here</div>
-        </div>
-      </div>
-
-      <div class="responsive">
-        <div class="gallery">
-          <a target="_blank" href="../../content/images/untitled.png">
-            <img src="../../content/images/untitled.png" alt="Northern Lights" width="600" height="400">
-          </a>
-          <div class="desc">Add a description of the image here</div>
-        </div>
-      </div>
-
-
-      <div class="clearfix"></div>
+  <h1><a class="title_name" href="../../index.html">RunRoute</a></h1>
+  <div class="entryinterface">
+    <div class="entry" id="entry">
+      <input id="homeloc" class="location" type="text" placeholder="Find a location" />
     </div>
 
-
-    <div id="map">
+    <div class="entry">
+      <div class="rangeslider">
+        <input type="range" min="1" max="10" value="1" class="slider" id="sliderDistance" oninput="sliderFunction()">
+      </div>
+      <input type="text" id="distanceEntry" value="1" class="distanceInput" id="distanceEntry" oninput="sliderEntryFunction()">
+      <p class="distanceUnits">KM</p>
     </div>
+  </div>
 
-    <div id="infowindow-content">
-      <img src="" width="16" height="16" id="place-icon" />
-      <span id="place-name" class="title"></span><br />
-      <span id="place-address"></span>
-    </div>
+  <p class="waypointsSubtitle">Waypoints:</p>
 
-    <script src="https://kit.fontawesome.com/21a0f11fac.js" crossorigin="anonymous"></script>
-  </body>
+  <ul id="places">
+  </ul>
+  <button type="submit" id="submit" class="submit" style="vertical-align:middle"><span>Map my Route</span></button>
+
+</div>
+
+<div id="map">
+</div>
+
+
+<div id="infowindow-content">
+  <img src="" width="16" height="16" id="place-icon" />
+  <span id="place-name" class="title"></span><br />
+  <span id="place-address"></span>
+</div>
+
+<script src="https://kit.fontawesome.com/21a0f11fac.js" crossorigin="anonymous"></script>
+</body>
 </html>
 
 
