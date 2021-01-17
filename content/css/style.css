@@ -939,6 +939,8 @@ div nav {
 @media only screen and (max-width: 720px) {
 
   /* ------------------------------- GLOBAL ------------------------------- */
+  
+  
 
   .sidebar img {
     display: none;
@@ -1160,9 +1162,14 @@ div nav {
 }
 
 @media only screen and (max-width: 400px) {
+  
+  html, body {
+    overflow-x: hidden;
+  }
+  
   .fa {
     font-size: 30px;
-    width: 10px;
+    width: 30px;
     margin-right: 10px;
   }
 
