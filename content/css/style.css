@@ -969,7 +969,7 @@ div nav {
   }
 
   .content {
-    height: 600px;
+    height: 700px;
     margin-bottom: -20px;
   }
 
@@ -1021,7 +1021,7 @@ div nav {
     margin-left: 20px;
   }
   .about_content {
-    height: 600px;
+    height: 400px;
     margin-top: -30px;
   }
 
@@ -1031,7 +1031,7 @@ div nav {
   }
   /* ------------------------------ CONTACT ------------------------------- */
   .contact_content {
-    height: 600px;
+    height: 400px;
     margin-top: -30px;
   }
 
@@ -1066,7 +1066,7 @@ div nav {
   }
 
   .content {
-    height: 600px;
+    height: 700px;
   }
 
   nav a {
@@ -1126,11 +1126,16 @@ div nav {
 
   .fa {
     padding: 0px;
-    font-size: 30px;
-    width: 100px;
+    font-size: 50px;
+    width: 90px;
     text-align: center;
     text-decoration: none;
     margin: 15px 2px;
+  }
+
+  .content {
+    height: 600px;
+
   }
   /* ------------------------------ HOMEPAGE ------------------------------ */
   /* ------------------------------- ABOUT  ------------------------------- */
@@ -1140,7 +1145,7 @@ div nav {
   }
 
   .about_content {
-    height: 700px;
+    height: 400px;
   }
 
   #about_directions {
@@ -1149,9 +1154,29 @@ div nav {
   }
   /* ------------------------------ CONTACT ------------------------------- */
   .contact_content {
-    height: 650px;
+    height: 400px;
   }
 
+}
+
+@media only screen and (max-width: 400px) {
+  .fa {
+    font-size: 40px;
+    width: 50px;
+    margin-right: 20px;
+  }
+
+  .about_content {
+    height: 400px;
+  }
+
+  .contact_content {
+    height: 400px;
+  }
+
+  .contact_content p {
+    font-size: 20px;
+  }
 }
 
 

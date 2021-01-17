@@ -402,6 +402,12 @@ li:hover {
 
 
 @media only screen and (max-width: 800px) {
+
+
+  html, body {
+    overflow-x: hidden;
+  }
+
   .sidebar {
     display: block;
     position: absolute;
@@ -410,7 +416,11 @@ li:hover {
     height: 40%;
     left: 0;
     bottom: 0;
+    min-height: 240px;
+    overflow-x: hidden;
+    overflow-y: hidden;
   }
+
 
   .waypointsSubtitle {
     display: none;
@@ -430,7 +440,7 @@ li:hover {
     /*font-family: 'Ruda', sans-serif; possible alt font */
     font-size: 40px;
     margin-left: 5px;
-    margin-top: -20px;
+    margin-top: -40px;
     float: left;
   }
 
@@ -438,10 +448,20 @@ li:hover {
     margin-top: -7px;
   }
 
+  #homeloc {
+    margin-left: 0px;
+    position: relative;
+  }
+
+  .entry {
+    margin-right: 0px;
+    padding-right: 0px;
+    margin-left: 0px;
+  }
+
   #map {
     height: 60%;
     width: 100%;
-    float: right;
   }
 
   .submit {
@@ -460,10 +480,12 @@ li:hover {
     margin: 5px;
     margin-right:-1px;
     float: right;
-    margin-top: -18px;
+    margin-top: -30px;
     font-family: 'Raleway', sans-serif;
     text-align: right;
   }
+
+
 
   .submit span {
     cursor: pointer;
@@ -492,7 +514,7 @@ li:hover {
 
   ul {
     height: 43%;
-    margin-top: -5px;;
+    margin-top: -20px;;
   }
 }
 
@@ -511,6 +533,11 @@ li:hover {
 
 @media only screen and (max-width: 420px) {
 
+  .distanceInput {
+    margin-bottom: -20px;
+    margin-top: -5px;
+  }
+
   .small_title_name {
     font-size: 20px;
   }
@@ -518,12 +545,24 @@ li:hover {
   .submit {
     width: 56%;
     font-size: 20px;
-    margin-top: -8px;
+    margin-top: -20px;
+  }
+
+  ul {
+    margin-top: -15px;
   }
 
 }
 
+@media only screen and (max-width: 320px) {
+  .sidebar {
+    height: 50%
+  }
 
+  #map {
+    height: 50%;
+  }
+}
 
 
 
