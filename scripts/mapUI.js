@@ -156,6 +156,7 @@ function initMap() {
             a.innerText = place.place_id;
             li.appendChild(a);
             placesList.appendChild(li);
+            li.setAttribute("class", "deselected_waypoint");
             document.getElementById("banana" + i).style.visibility = "hidden";
             li.addEventListener('click', function(e){
                 clicked_id = e.target.id;
@@ -187,6 +188,18 @@ function initMap() {
     document
         .getElementById("sliderDistance")
         .addEventListener("change", nearbySearch);
+
+    document
+        .getElementById("sliderDistance")
+        .addEventListener("change", clearWaypoints);
+
+    document
+        .getElementById("distanceEntry")
+        .addEventListener("change", nearbySearch);
+
+    document
+        .getElementById("distanceEntry")
+        .addEventListener("change", clearWaypoints);
 
 
 

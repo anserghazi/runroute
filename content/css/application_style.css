@@ -1,14 +1,11 @@
 /* application_style */
-html {
-  position: relative;
-  overflow-x: hidden;
-  min-height: 100%;
-  background-color:  #feffeb;
-}
 
+
+html,
 body {
-  overflow-x: hidden;
-  margin: 0px !important;
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 div form p {
@@ -28,6 +25,10 @@ div form p {
   font-size: 55px;
   margin-left: 10px;
   float: left;
+}
+
+.small_title_name {
+  display: none;
 }
 
 .current_location {
@@ -58,9 +59,17 @@ div form p {
   display: inline-block;
   background-color:  #222632;
   width: 32%;
-  min-width: 550px;
   height: 100%;
 }
+
+
+#map {
+  height: 100%;
+  width: 68%;
+  float: right;
+}
+
+
 
 .entry {
   margin-left: 15px;
@@ -107,25 +116,7 @@ div form p {
   margin-bottom: 10px;
 }
 
-div.gallery {
-  border: 1px solid #ccc;
-}
 
-div.gallery:hover {
-  border: 1px solid #777;
-}
-
-div.gallery img {
-  width: 100%;
-  height: auto;
-}
-
-div.desc {
-  padding: 15px;
-  text-align: center;
-  background-color: #939bb5;
-  color: black;
-}
 
 * {
   box-sizing: border-box;
@@ -176,11 +167,11 @@ div.desc {
 .rangeslider {
   display: inline;
   width: 10%;
-}
+  }
 
 .slider {
   -webkit-appearance: none;
-  width: 72%;
+  width: 50%;
   height: 5px;
   outline: none;
   opacity: 0.8;
@@ -190,16 +181,6 @@ div.desc {
 
 .slider:hover {
   opacity: 1;
-}
-
-
-#map {
-  height: 938px;
-  width: 68%;
-  float: right;
-  display: inline-block;
-  margin: 0;
-  padding: 0;
 }
 
 
@@ -214,7 +195,7 @@ ul {
   padding: 0;
   margin: 0;
   height: 570px;
-  width: 610px;
+  width: 100%;
   overflow-y: scroll;
   overflow: -moz-scrollbars-none;
   -ms-overflow-style: none;
@@ -267,24 +248,6 @@ li:hover {
 
 
 
-.location {
-  width: 100%;
-  margin-left: -15px;
-  padding-top: -15px;
-  height: 40px;
-  border-style: none;
-  padding-left: 10px;
-  font-family: 'Raleway', sans-serif;
-  font-size: 30px;
-  box-sizing: border-box;
-  background-repeat: no-repeat;
-  background-position: right;
-  margin-bottom: -10px;
-  border-style: inset;
-}
-
-
-
 .submit {
   display: inline-block;
   border-radius: 4px;
@@ -299,9 +262,11 @@ li:hover {
   transition: all 0.5s;
   cursor: pointer;
   margin: 5px;
-  margin-left: 50px;
-  margin-top: 25px;
+  margin-right:-1px;
+  float: right;
+  margin-top: 1px;
   font-family: 'Raleway', sans-serif;
+  text-align: right;
 }
 
 .submit span {
@@ -328,6 +293,237 @@ li:hover {
   opacity: 1;
   right: 0;
 }
+
+@media only screen and (max-width: 1788px) {
+
+  .location {
+    background-image: url("");
+  }
+
+  .selected_waypoint {
+    font-size: 20px;
+  }
+
+  .deselected_waypoint {
+    font-size: 20px;
+  }
+
+}
+
+
+@media only screen and (max-width: 1400px) {
+  .title_name {
+    font-size: 50px;
+    margin-top: -20px;
+    margin-left: 5px;
+  }
+
+
+
+  .slider {
+    width: 40%;
+  }
+
+  .location {
+    font-size: 25px;
+    margin-top: -20px;
+  }
+
+  .entryinterface {
+    margin-top: 80px;
+  }
+
+  .selected_waypoint {
+    font-size: 15px;
+  }
+
+  .deselected_waypoint {
+    font-size: 15px;
+  }
+
+
+
+}
+
+@media only screen and (max-width: 1100px) {
+
+  .title_name {
+    font-size: 35px;
+  }
+
+
+  .entryinterface {
+    margin-top: 60px;
+  }
+
+
+  li a {
+    padding-bottom: 5px;
+  }
+
+  .selected_waypoint {
+    font-size: 12px;
+    padding-left: 5px;
+  }
+
+  .deselected_waypoint {
+    font-size: 12px;
+  }
+
+  #entry{
+    margin-bottom: -15px;
+  }
+
+  .waypointsSubtitle {
+    font-size: 20px;
+  }
+
+  .submit {
+    font-size: 25px;
+  }
+
+
+}
+
+@media only screen and (max-width: 1100px) {
+  .selected_waypoint {
+    font-size: 11px;
+
+  }
+
+  .deselected_waypoint {
+    font-size: 11px;
+  }
+
+  .distanceInput {
+    width: 50px;
+  }
+}
+
+
+@media only screen and (max-width: 800px) {
+  .sidebar {
+    display: block;
+    position: absolute;
+    background-color:  #222632;
+    width: 100%;
+    height: 40%;
+    left: 0;
+    bottom: 0;
+  }
+
+  .waypointsSubtitle {
+    display: none;
+  }
+
+  .title_name {
+    display: none;
+  }
+
+  .small_title_name {
+    display: inline;
+    text-decoration: none;
+    color: #ffffff;
+
+    font-family: 'Montserrat Subrayada', sans-serif;
+
+    /*font-family: 'Ruda', sans-serif; possible alt font */
+    font-size: 40px;
+    margin-left: 5px;
+    margin-top: -20px;
+    float: left;
+  }
+
+  .entryinterface {
+    margin-top: -7px;
+  }
+
+  #map {
+    height: 60%;
+    width: 100%;
+    float: right;
+  }
+
+  .submit {
+    display: inline-block;
+    border-radius: 4px;
+    border-color: #000090;
+    background-color: #008CBA;
+    border: none;
+    color: #FFFFFF;
+    text-align: center;
+    font-size: 28px;
+    padding: 10px;
+    width: 450px;
+    transition: all 0.5s;
+    cursor: pointer;
+    margin: 5px;
+    margin-right:-1px;
+    float: right;
+    margin-top: -18px;
+    font-family: 'Raleway', sans-serif;
+    text-align: right;
+  }
+
+  .submit span {
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    transition: 0.5s;
+  }
+
+  .submit span:after {
+    content: '\00bb';
+    position: absolute;
+    opacity: 0;
+    top: 0;
+    right: -20px;
+    transition: 0.5s;
+  }
+
+  .submit:hover span {
+    padding-right: 25px;
+  }
+
+  .submit:hover span:after {
+    opacity: 1;
+    right: 0;
+  }
+
+  ul {
+    height: 43%;
+    margin-top: -5px;;
+  }
+}
+
+@media only screen and (max-width: 720px) {
+  .small_title_name {
+    font-size: 30px;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+  }
+
+  .submit {
+    width: 55%;
+  }
+}
+
+@media only screen and (max-width: 420px) {
+
+  .small_title_name {
+    font-size: 20px;
+  }
+
+  .submit {
+    width: 56%;
+    font-size: 20px;
+    margin-top: -8px;
+  }
+
+}
+
+
 
 
 
