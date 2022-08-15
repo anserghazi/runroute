@@ -1,6 +1,5 @@
 /* application_style */
 
-
 html,
 body {
   height: 100%;
@@ -19,7 +18,7 @@ div form p {
   text-decoration: none;
   color: #ffffff;
 
-  font-family: 'Montserrat Subrayada', sans-serif;
+  font-family: "Montserrat Subrayada", sans-serif;
 
   /*font-family: 'Ruda', sans-serif; possible alt font */
   font-size: 55px;
@@ -33,7 +32,7 @@ div form p {
 
 .current_location {
   color: white;
-  font-family: 'Raleway', sans-serif;
+  font-family: "Raleway", sans-serif;
   font-size: 14px;
   float: right;
   padding: 0px;
@@ -50,26 +49,23 @@ div form p {
 
 .title {
   color: #222632;
-  font-family: 'Raleway', sans-serif;
+  font-family: "Raleway", sans-serif;
   font-size: 17px;
 }
 
 .sidebar {
   position: fixed;
   display: inline-block;
-  background-color:  #222632;
+  background-color: #222632;
   width: 32%;
   height: 100%;
 }
-
 
 #map {
   height: 100%;
   width: 68%;
   float: right;
 }
-
-
 
 .entry {
   margin-left: 15px;
@@ -79,7 +75,6 @@ div form p {
   width: 100%;
 }
 
-
 .location {
   width: 100%;
   margin-left: -15px;
@@ -87,7 +82,7 @@ div form p {
   height: 40px;
   border-style: none;
   padding-left: 10px;
-  font-family: 'Raleway', sans-serif;
+  font-family: "Raleway", sans-serif;
   font-size: 30px;
   box-sizing: border-box;
   background-image: url("../images/magnifying_glass.png");
@@ -99,7 +94,7 @@ div form p {
 .distanceInput {
   display: inline;
   width: 65px;
-  font-family: 'Raleway', sans-serif;
+  font-family: "Raleway", sans-serif;
   font-size: 25px;
   text-align: right;
   margin-left: 15px;
@@ -109,14 +104,12 @@ div form p {
 .waypointsSubtitle {
   display: block;
   margin: 0px;
-  font-family: 'Raleway', sans-serif;
+  font-family: "Raleway", sans-serif;
   font-size: 25px;
   color: white;
   margin-left: 7px;
   margin-bottom: 10px;
 }
-
-
 
 * {
   box-sizing: border-box;
@@ -147,27 +140,28 @@ div form p {
   clear: both;
 }
 
-
-
-
-
-
-
-
 .distanceUnits {
   display: inline;
   margin: 0px;
-  font-family: 'Raleway', sans-serif;
+  font-family: "Raleway", sans-serif;
   font-size: 20px;
   color: white;
 }
 
-
+.distanceUI {
+  display: inline;
+  margin: 0px;
+  font-family: "Raleway", sans-serif;
+  font-size: 20px;
+  color: white;
+  margin-right: -15px;
+  margin-left: 10px;
+}
 
 .rangeslider {
   display: inline;
   width: 10%;
-  }
+}
 
 .slider {
   -webkit-appearance: none;
@@ -177,12 +171,9 @@ div form p {
   opacity: 0.8;
 }
 
-
-
 .slider:hover {
   opacity: 1;
 }
-
 
 h2 {
   font-size: 22px;
@@ -213,7 +204,7 @@ li {
   white-space: nowrap;
   overflow: hidden;
   font-size: 25px;
-  font-family: 'Raleway', sans-serif;
+  font-family: "Raleway", sans-serif;
 }
 
 li a {
@@ -221,7 +212,6 @@ li a {
   display: block;
   padding: 10px 0px 10px 20px;
   border: 1px solid #ccc;
-
 }
 
 #more {
@@ -245,16 +235,13 @@ li:hover {
   background-color: white;
 }
 
-
-
-
 .submit {
   display: inline-block;
   border-radius: 4px;
   border-color: #000090;
-  background-color: #008CBA;
+  background-color: #008cba;
   border: none;
-  color: #FFFFFF;
+  color: #ffffff;
   text-align: center;
   font-size: 28px;
   padding: 20px;
@@ -262,10 +249,10 @@ li:hover {
   transition: all 0.5s;
   cursor: pointer;
   margin: 5px;
-  margin-right:-1px;
+  margin-right: -1px;
   float: right;
   margin-top: 1px;
-  font-family: 'Raleway', sans-serif;
+  font-family: "Raleway", sans-serif;
   text-align: right;
 }
 
@@ -277,7 +264,7 @@ li:hover {
 }
 
 .submit span:after {
-  content: '\00bb';
+  content: "\00bb";
   position: absolute;
   opacity: 0;
   top: 0;
@@ -295,7 +282,6 @@ li:hover {
 }
 
 @media only screen and (max-width: 1788px) {
-
   .location {
     background-image: url("");
   }
@@ -307,9 +293,7 @@ li:hover {
   .deselected_waypoint {
     font-size: 20px;
   }
-
 }
-
 
 @media only screen and (max-width: 1400px) {
   .title_name {
@@ -317,8 +301,6 @@ li:hover {
     margin-top: -20px;
     margin-left: 5px;
   }
-
-
 
   .slider {
     width: 40%;
@@ -340,22 +322,16 @@ li:hover {
   .deselected_waypoint {
     font-size: 15px;
   }
-
-
-
 }
 
 @media only screen and (max-width: 1100px) {
-
   .title_name {
     font-size: 35px;
   }
 
-
   .entryinterface {
     margin-top: 60px;
   }
-
 
   li a {
     padding-bottom: 5px;
@@ -370,7 +346,7 @@ li:hover {
     font-size: 12px;
   }
 
-  #entry{
+  #entry {
     margin-bottom: -15px;
   }
 
@@ -381,14 +357,11 @@ li:hover {
   .submit {
     font-size: 25px;
   }
-
-
 }
 
 @media only screen and (max-width: 1100px) {
   .selected_waypoint {
     font-size: 11px;
-
   }
 
   .deselected_waypoint {
@@ -400,18 +373,16 @@ li:hover {
   }
 }
 
-
 @media only screen and (max-width: 800px) {
-
-
-  html, body {
+  html,
+  body {
     overflow-x: hidden;
   }
 
   .sidebar {
     display: block;
     position: absolute;
-    background-color:  #222632;
+    background-color: #222632;
     width: 100%;
     height: 40%;
     left: 0;
@@ -420,7 +391,6 @@ li:hover {
     overflow-x: hidden;
     overflow-y: hidden;
   }
-
 
   .waypointsSubtitle {
     display: none;
@@ -435,7 +405,7 @@ li:hover {
     text-decoration: none;
     color: #ffffff;
 
-    font-family: 'Montserrat Subrayada', sans-serif;
+    font-family: "Montserrat Subrayada", sans-serif;
 
     /*font-family: 'Ruda', sans-serif; possible alt font */
     font-size: 40px;
@@ -468,9 +438,9 @@ li:hover {
     display: inline-block;
     border-radius: 4px;
     border-color: #000090;
-    background-color: #008CBA;
+    background-color: #008cba;
     border: none;
-    color: #FFFFFF;
+    color: #ffffff;
     text-align: center;
     font-size: 28px;
     padding: 10px;
@@ -478,14 +448,12 @@ li:hover {
     transition: all 0.5s;
     cursor: pointer;
     margin: 5px;
-    margin-right:-1px;
+    margin-right: -1px;
     float: right;
     margin-top: -30px;
-    font-family: 'Raleway', sans-serif;
+    font-family: "Raleway", sans-serif;
     text-align: right;
   }
-
-
 
   .submit span {
     cursor: pointer;
@@ -495,7 +463,7 @@ li:hover {
   }
 
   .submit span:after {
-    content: '\00bb';
+    content: "\00bb";
     position: absolute;
     opacity: 0;
     top: 0;
@@ -514,7 +482,7 @@ li:hover {
 
   ul {
     height: 43%;
-    margin-top: -20px;;
+    margin-top: -20px;
   }
 }
 
@@ -532,7 +500,6 @@ li:hover {
 }
 
 @media only screen and (max-width: 420px) {
-
   .distanceInput {
     margin-bottom: -20px;
     margin-top: -5px;
@@ -551,18 +518,14 @@ li:hover {
   ul {
     margin-top: -15px;
   }
-
 }
 
 @media only screen and (max-width: 320px) {
   .sidebar {
-    height: 50%
+    height: 50%;
   }
 
   #map {
     height: 50%;
   }
 }
-
-
-

@@ -65,15 +65,15 @@ function initMap() {
         nearbySearch();
     });
 
-
-
-
-
     directionsRenderer.setMap(map);
-    document.getElementById("submit").addEventListener("click", () => {
+    document.getElementById("places").addEventListener("click", () => {
         calculateAndDisplayRoute(directionsService, directionsRenderer);
     });
     directionsRenderer.setMap(map);
+
+    document.getElementById("sliderDistance").addEventListener("click", () => {
+        nearbySearch();
+    });
 
     const onChangeHandler = function () {
         calculateAndDisplayRoute(directionsService, directionsRenderer);
@@ -90,7 +90,7 @@ function initMap() {
     var nearbySearch = function() {
         var address = document.getElementById("homeloc").value;
         var distance = document.getElementById("sliderDistance").value;
-        var radius = distance * 1000 / 7;
+        var radius = distance;
 
 
         const geocoder = new google.maps.Geocoder();
@@ -212,23 +212,17 @@ function initMap() {
 // a geocode of a place ID.
 geocodePlaceId = (geocoder, place_ID) =>  {
     geocoder.geocode({placeId: place_ID}, (results, status) => {
-        if (status === "OK") {
-            if (results[0]) {
-                if (!waypoint_name_list.includes(results[0].formatted_address)) {
-                    waypoint_name_list.push(results[0].formatted_address);
+        if (results[0]) {
+            if (!waypoint_name_list.includes(results[0].formatted_address)) {
+                waypoint_name_list.push(results[0].formatted_address);
 
-                    // window.alert(waypoint_name_list);
-                }
-                else {
-                    var index = waypoint_name_list.indexOf(results[0].formatted_address);
-                    waypoint_name_list.splice(index, 1);
-                    // window.alert(waypoint_name_list);
-                }
-            } else {
-                window.alert("No results found");
+            }
+            else {
+                var index = waypoint_name_list.indexOf(results[0].formatted_address);
+                waypoint_name_list.splice(index, 1);
             }
         } else {
-            window.alert("Geocoder failed due to: " + status);
+            window.alert("No results found");
         }
     });
 }
@@ -295,8 +289,6 @@ function calculateAndDisplayRoute(directionsService, directionsRenderer) {
 
 
 
-            } else {
-                window.alert("Directions request failed due to " + status);
             }
         }
     );

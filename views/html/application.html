@@ -5,7 +5,7 @@
   <title>RunRoute | Route Generator</title>
   <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
   <script
-          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAYmrpoOWCzar68Hf6eb5i5FxKEjYotok&libraries=places&callback=initMap&libraries=places&v=weekly"
+          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAq2wzt4PCpzGRIhybEZ5kHpsW0QYzvN9o&libraries=places&callback=initMap&libraries=places&v=weekly"
           defer
   ></script>
   <script src="../../scripts/mapUI.js"></script>
@@ -36,20 +36,17 @@
 
     <div class="entry">
       <div class="rangeslider">
-        <input type="range" min="1" max="10" value="1" class="slider" id="sliderDistance" oninput="sliderFunction()">
+        <input type="range" min="1" max="1500" value="1" class="slider" id="sliderDistance" oninput="sliderFunction()">
       </div>
+      <p class="distanceUI">Parks within</p>
       <input type="text" id="distanceEntry" value="1" class="distanceInput" id="distanceEntry" oninput="sliderEntryFunction()">
-      <p class="distanceUnits">KM</p>
+      <p class="distanceUnits">metre(s)</p>
     </div>
   </div>
-
-  <p class="waypointsSubtitle">Waypoint List</p>
 
   <ul id="places">
   </ul>
   <h1><a class="small_title_name" href="../../index.html">RunRoute</a></h1>
-  <button type="submit" id="submit" class="submit" style="vertical-align:middle"><span>Map my Route</span></button>
-
 </div>
 
 <div id="map">
