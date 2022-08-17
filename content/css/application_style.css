@@ -177,7 +177,7 @@ ul {
   padding: 0;
   margin: 0;
   margin-top: -14px;
-  height: 570px;
+  height: 610px;
   width: 100%;
   overflow-y: scroll;
   overflow: -moz-scrollbars-none;
@@ -342,17 +342,23 @@ li:hover {
   .deselected_waypoint {
     font-size: 15px;
   }
-}
 
-@media only screen and (max-width: 1300px) {
-  .slider {
-    width: 45%;
+  .distanceInput {
+    display: none;
   }
-}
 
-@media only screen and (max-width: 1160px) {
+  .distanceUI {
+    display: none;
+  }
+
+  .distanceUnits {
+    display: none;
+  }
+
   .slider {
-    width: 41%;
+    display: inline;
+    margin-left: 15px;
+    width: 87%;
   }
 }
 
@@ -387,7 +393,8 @@ li:hover {
   }
 
   .slider {
-    width: 37%;
+    width: 85%;
+    margin-left: 0px;
   }
 }
 
@@ -402,10 +409,6 @@ li:hover {
 
   .distanceInput {
     width: 50px;
-  }
-
-  .slider {
-    display: none;
   }
 }
 
@@ -440,7 +443,7 @@ li:hover {
     display: inline;
     text-decoration: none;
     color: #ffffff;
-
+    margin-top: -8px;
     font-family: "Montserrat Subrayada", sans-serif;
 
     /*font-family: 'Ruda', sans-serif; possible alt font */
@@ -516,14 +519,31 @@ li:hover {
   }
 
   ul {
-    height: 43%;
-    margin-top: -20px;
+    height: 66%;
+    margin-top: -14px;
+  }
+
+  .slider {
+    width: 70%;
+    margin-left: 20px;
   }
 }
 
 @media only screen and (max-width: 720px) {
-  .submit {
-    width: 55%;
+  .slider {
+    width: 65%;
+  }
+}
+
+@media only screen and (max-width: 620px) {
+  .slider {
+    width: 60%;
+  }
+}
+
+@media only screen and (max-width: 520px) {
+  .slider {
+    width: 50%;
   }
 }
 
@@ -534,6 +554,7 @@ li:hover {
   }
 
   .small_title_name {
+    margin-top: -2px;
     font-size: 20px;
   }
 
@@ -545,6 +566,10 @@ li:hover {
 
   ul {
     margin-top: -15px;
+  }
+
+  .slider {
+    width: 55%;
   }
 }
 
