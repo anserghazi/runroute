@@ -46,24 +46,44 @@ function initMap() {
     ],
   });
 
-  // Create the search box and link it to the UI element.
+  // Create the search box and link it to the UI element.input
   const input = document.getElementById("homeloc");
   const searchBox = new google.maps.places.SearchBox(input);
+
+  document.getElementById("homeloc").addEventListener("change", clearWaypoints);
+  document.getElementById("homeloc").addEventListener("change", nearbySearch);
+
+  document
+    .getElementById("sliderDistance")
+    .addEventListener("change", nearbySearch);
+
+  document
+    .getElementById("sliderDistance")
+    .addEventListener("change", clearWaypoints);
+
+  document
+    .getElementById("distanceEntry")
+    .addEventListener("change", nearbySearch);
+
+  document
+    .getElementById("distanceEntry")
+    .addEventListener("change", clearWaypoints);
+
   // Listen for the event fired when the user selects a prediction and retrieve
   // more details for that place.
   searchBox.addListener("places_changed", () => {
-    calculateAndDisplayRoute(directionsService, directionsRenderer);
+    let defaultAddress = searchBox.getPlaces()[0].formatted_address;
+    input.value = defaultAddress;
+    clearWaypoints();
     nearbySearch();
+    calculateAndDisplayRoute(directionsService, directionsRenderer);
     directionsRenderer.setMap(map);
   });
 
   document.getElementById("sliderDistance").addEventListener("click", () => {
+    clearWaypoints();
     nearbySearch();
   });
-
-  const onChangeHandler = function () {
-    calculateAndDisplayRoute(directionsService, directionsRenderer);
-  };
 
   // Clear the waypoint list between different location searches
   var clearWaypoints = function () {
@@ -152,34 +172,6 @@ function initMap() {
       );
     }
   };
-
-  // All of the asynchronous function calls are written below
-
-  document.getElementById("submit").addEventListener("click", onChangeHandler);
-
-  document
-    .getElementById("homeloc")
-    .addEventListener("change", onChangeHandler);
-
-  document.getElementById("homeloc").addEventListener("change", nearbySearch);
-
-  document.getElementById("homeloc").addEventListener("change", clearWaypoints);
-
-  document
-    .getElementById("sliderDistance")
-    .addEventListener("change", nearbySearch);
-
-  document
-    .getElementById("sliderDistance")
-    .addEventListener("change", clearWaypoints);
-
-  document
-    .getElementById("distanceEntry")
-    .addEventListener("change", nearbySearch);
-
-  document
-    .getElementById("distanceEntry")
-    .addEventListener("change", clearWaypoints);
 }
 
 // This function is called when the user clicks the UI button requesting
