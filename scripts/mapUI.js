@@ -5,12 +5,16 @@ function initMap() {
   const directionsService = new google.maps.DirectionsService();
   const directionsRenderer = new google.maps.DirectionsRenderer({
     draggable: true,
+    polylineOptions: {
+      strokeColor: "yellow",
+    },
   });
 
   var toronto = { lat: 43.6532, lng: -79.3852 };
   const map = new google.maps.Map(document.getElementById("map"), {
     center: toronto,
     zoom: 15,
+    mapTypeId: "satellite",
     styles: [
       {
         stylers: [
@@ -46,7 +50,7 @@ function initMap() {
     ],
   });
 
-  // Create the search box and link it to the UI element.input
+  // Create the search box and link it to the UI element
   const input = document.getElementById("homeloc");
   const searchBox = new google.maps.places.SearchBox(input);
 
