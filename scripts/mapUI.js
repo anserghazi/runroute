@@ -7,9 +7,7 @@ function initMap() {
     draggable: true,
   });
 
-  var ppp = 43.6532;
-  var qqq = -79.3852;
-  var toronto = { lat: ppp, lng: qqq };
+  var toronto = { lat: 43.6532, lng: -79.3852 };
   const map = new google.maps.Map(document.getElementById("map"), {
     center: toronto,
     zoom: 15,
@@ -54,19 +52,10 @@ function initMap() {
   // Listen for the event fired when the user selects a prediction and retrieve
   // more details for that place.
   searchBox.addListener("places_changed", () => {
-    const places = searchBox.getPlaces();
-    if (places.length == 0) {
-      return;
-    }
     calculateAndDisplayRoute(directionsService, directionsRenderer);
     nearbySearch();
+    directionsRenderer.setMap(map);
   });
-
-  directionsRenderer.setMap(map);
-  document.getElementById("places").addEventListener("click", () => {
-    calculateAndDisplayRoute(directionsService, directionsRenderer);
-  });
-  directionsRenderer.setMap(map);
 
   document.getElementById("sliderDistance").addEventListener("click", () => {
     nearbySearch();
@@ -152,7 +141,12 @@ function initMap() {
         function (e) {
           clicked_id = e.target.id;
           is_selected = e.target.className;
-          selected_waypoint(clicked_id, is_selected);
+          selected_waypoint(
+            clicked_id,
+            is_selected,
+            directionsRenderer,
+            directionsService
+          );
         },
         false
       );
@@ -190,14 +184,23 @@ function initMap() {
 
 // This function is called when the user clicks the UI button requesting
 // a geocode of a place ID.
-geocodePlaceId = (geocoder, place_ID) => {
+geocodePlaceId = (
+  geocoder,
+  place_ID,
+  directionsRenderer,
+  directionsService
+) => {
   geocoder.geocode({ placeId: place_ID }, (results, status) => {
     if (results[0]) {
       if (!waypoint_name_list.includes(results[0].formatted_address)) {
         waypoint_name_list.push(results[0].formatted_address);
+        calculateAndDisplayRoute(directionsService, directionsRenderer);
+        console.log(waypoint_name_list);
       } else {
         var index = waypoint_name_list.indexOf(results[0].formatted_address);
         waypoint_name_list.splice(index, 1);
+        calculateAndDisplayRoute(directionsService, directionsRenderer);
+        console.log(waypoint_name_list);
       }
     } else {
       window.alert("No results found");
@@ -206,7 +209,12 @@ geocodePlaceId = (geocoder, place_ID) => {
 };
 
 // Make a list of all selected waypoints
-function selected_waypoint(clicked_id, is_selected) {
+function selected_waypoint(
+  clicked_id,
+  is_selected,
+  directionsRenderer,
+  directionsService
+) {
   // Create the geocoder service.
   const geocoder = new google.maps.Geocoder();
 
@@ -226,19 +234,19 @@ function selected_waypoint(clicked_id, is_selected) {
       .getElementById(clicked_id)
       .setAttribute("class", "selected_waypoint");
     entered_waypoints_list.push(place_ID);
-    geocodePlaceId(geocoder, place_ID);
+    geocodePlaceId(geocoder, place_ID, directionsRenderer, directionsService);
   } else if (is_selected == "selected_waypoint") {
     document
       .getElementById(clicked_id)
       .setAttribute("class", "deselected_waypoint");
     entered_waypoints_list.pop(place_ID);
-    geocodePlaceId(geocoder, place_ID);
+    geocodePlaceId(geocoder, place_ID, directionsRenderer, directionsService);
   } else {
     document
       .getElementById(clicked_id)
       .setAttribute("class", "selected_waypoint");
     entered_waypoints_list.push(place_ID);
-    geocodePlaceId(geocoder, place_ID);
+    geocodePlaceId(geocoder, place_ID, directionsRenderer, directionsService);
   }
 }
 
@@ -252,6 +260,7 @@ function calculateAndDisplayRoute(directionsService, directionsRenderer) {
       stopover: true,
     });
   }
+  console.log(waypts);
 
   directionsService.route(
     {
