@@ -606,3 +606,51 @@ li:hover {
     width: 40%;
   }
 }
+
+@media only screen and (max-height: 580px) {
+  #map {
+    height: 58%;
+  }
+}
+
+@media only screen and (max-height: 550px) {
+  #map {
+    height: 56%;
+  }
+}
+
+@media only screen and (max-height: 530px) {
+  #map {
+    height: 54%;
+  }
+}
+
+@media only screen and (max-height: 510px) {
+  #map {
+    height: 52%;
+  }
+}
+
+@media only screen and (max-height: 490px) {
+  #map {
+    height: 50%;
+  }
+}
+
+@media only screen and (max-height: 470px) {
+  #map {
+    height: 48%;
+  }
+}
+
+@media only screen and (max-height: 450px) {
+  #map {
+    height: 46%;
+  }
+}
+
+@media only screen and (max-height: 430px) {
+  #map {
+    height: 43%;
+  }
+}
