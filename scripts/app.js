@@ -15,11 +15,12 @@ var RR = {
   directionsService: null,
   directionsRenderer: null,
   searchBox: null,
-  home: null,            // { location: LatLng, address, lat, lng }
+  home: null,            // { location: LatLng, address, lat, lng, saveLabel }
+  typedQuery: "",        // what the user last typed into #homeloc (spec §7.2 save label)
   homeMarker: null,
   results: new Map(),    // place_id -> place (current search results)
   markers: new Map(),    // place_id -> Marker
-  selected: new Map(),   // place_id -> { id, name, location, cat }
+  selected: new Map(),   // place_id -> { id, name, location, cat, refreshedAt }
   hasRoute: false,
   routeMeters: 0,
   paceSecPerKm: 360,
@@ -194,6 +195,13 @@ function applyMapTheme(theme) {
     var dir = RR.directionsRenderer.getDirections();
     if (dir) RR.directionsRenderer.setDirections(dir);
   }
+  // Maps JS takes backgroundColor only at construction; repaint its containers for live swaps.
+  var bg = theme === "dark" ? "#242f3e" : "#e8eaf2";
+  var div = RR.map.getDiv();
+  if (div) {
+    div.style.backgroundColor = bg;
+    if (div.firstElementChild) div.firstElementChild.style.backgroundColor = bg;
+  }
   if (window.RRRun && RR.run && RR.run.active && typeof window.RRRun.retheme === "function") {
     window.RRRun.retheme(theme);
   }
@@ -207,7 +215,8 @@ function boot() {
     mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT },
     streetViewControl: false,
     fullscreenControl: !isMobile(),
-    clickableIcons: false
+    clickableIcons: false,
+    backgroundColor: (window.RRTheme && RRTheme.effective() === "dark") ? "#242f3e" : "#e8eaf2"
   });
 
   RR.geocoder = new google.maps.Geocoder();
@@ -234,8 +243,15 @@ function boot() {
     var places = RR.searchBox.getPlaces();
     if (!places || !places.length || !places[0].geometry) return;
     var p = places[0];
+    var label = RR.typedQuery || input.value;
     input.value = p.formatted_address || p.name;
-    setHome(p.geometry.location, input.value);
+    setHome(p.geometry.location, input.value, { saveLabel: label });
+  });
+
+  // Only trusted events: SearchBox and our own code set input.value programmatically.
+  input.addEventListener("input", function (e) {
+    if (e.isTrusted === false) return;
+    RR.typedQuery = input.value;
   });
 
   input.addEventListener("focus", function () {
@@ -372,7 +388,8 @@ function setHome(latLng, address, opts) {
     location: latLng,
     address: address,
     lat: latLng.lat(),
-    lng: latLng.lng()
+    lng: latLng.lng(),
+    saveLabel: typeof opts.saveLabel === "string" ? opts.saveLabel : null
   };
 
   RR.map.setCenter(latLng);
@@ -423,7 +440,7 @@ function useMyLocation() {
           ? results[0].formatted_address
           : pos.coords.latitude.toFixed(5) + ", " + pos.coords.longitude.toFixed(5);
         $("homeloc").value = addr;
-        setHome(latLng, addr);
+        setHome(latLng, addr, { saveLabel: "My location" });
       });
     },
     function () {
@@ -606,6 +623,7 @@ function clearResultMarkers() {
 /* ---------------- Selection & routing ---------------- */
 
 function togglePlace(id) {
+  if (RR.run && RR.run.active) { toast("End the run to change stops."); return; }
   if (RR.selected.has(id)) {
     RR.selected.delete(id);
   } else {
@@ -619,7 +637,8 @@ function togglePlace(id) {
       id: id,
       name: place.name,
       location: place.geometry.location,
-      cat: place.rrCat || null
+      cat: place.rrCat || null,
+      refreshedAt: Date.now()
     });
   }
   syncSelectionUI(id);
@@ -642,6 +661,7 @@ function syncSelectionUI(id) {
 }
 
 function calculateRoute(onDone) {
+  if (RR.run && RR.run.active) return;
   if (!RR.home || !RR.selected.size) return;
 
   var waypts = [];
@@ -713,6 +733,7 @@ function clearRouteDisplay() {
 }
 
 function clearSelections(silent) {
+  if (RR.run && RR.run.active) return;
   var had = RR.selected.size;
   var ids = Array.from(RR.selected.keys());
   RR.selected.clear();
@@ -848,7 +869,7 @@ function restoreFromHash() {
 
   var address = params.get("a") || lat.toFixed(4) + ", " + lng.toFixed(4);
   $("homeloc").value = address;
-  setHome(new google.maps.LatLng(lat, lng), address);
+  setHome(new google.maps.LatLng(lat, lng), address, { saveLabel: address });
   runSearch();
 
   var ids = (params.get("w") || "").split(",").filter(Boolean).slice(0, MAX_WAYPOINTS);
@@ -866,7 +887,8 @@ function restoreFromHash() {
             id: id,
             name: place.name,
             location: place.geometry.location,
-            cat: catFromTypes(place.types)
+            cat: catFromTypes(place.types),
+            refreshedAt: Date.now()
           });
           syncSelectionUI(id);
         }

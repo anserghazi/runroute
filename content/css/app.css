@@ -4,6 +4,7 @@
 
    Z-INDEX REGISTRY
      #map .................. 0
+     .map-error ............ 4
      .statsbar ............. 10 desktop / 20 mobile
      .panel (sheet) ........ 15
      #moreMenu ............. inside .statsbar (position:relative)
@@ -177,6 +178,26 @@ button { font-family: var(--font); cursor: pointer; }
 
 .icon-btn.busy { animation: pulse 1s ease-in-out infinite; pointer-events: none; }
 
+/* Toggle icon buttons (#preVoice, #runVoiceBtn): on = tinted, off = faint + muted glyph */
+.icon-btn[aria-pressed="true"],
+.icon-btn[aria-pressed="true"]:hover {
+  background: var(--brand-tint);
+  border-color: var(--brand-hi);
+  color: var(--brand-tint-ink);
+}
+
+.icon-btn[aria-pressed="false"],
+.icon-btn[aria-pressed="false"]:hover {
+  background: var(--field-bg);
+  border-style: dashed;
+  color: var(--ink-faint);
+}
+
+.icon-btn .ic-off,
+.icon-btn[aria-pressed="false"] .ic-on { display: none; }
+
+.icon-btn[aria-pressed="false"] .ic-off { display: block; }
+
 @keyframes pulse { 50% { opacity: 0.4; } }
 
 /* Radius */
@@ -302,6 +323,15 @@ button { font-family: var(--font); cursor: pointer; }
   padding: 0 10px 10px;
 }
 
+@media (min-width: 861px) {
+  /* #places is the only shrinkable sibling on desktop; an uncapped list squeezes it to 0 */
+  #savedList {
+    max-height: 40vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
 #savedList .hint {
   padding: 10px 8px 14px;
   color: var(--ink-faint);
@@ -371,7 +401,7 @@ button { font-family: var(--font); cursor: pointer; }
   font-size: 13.5px;
   font-weight: 700;
   color: #fff;
-  background: var(--danger);
+  background: var(--danger-fill);
 }
 
 /* ---------------- Places list ---------------- */
@@ -446,12 +476,13 @@ li.place[data-cat="gym"] { --cat: var(--cat-gym); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: transparent;
 }
 
 li.place[aria-selected="true"] .place-check {
   background: var(--brand);
   border-color: var(--brand);
+  color: #fff;
 }
 
 .place-check svg { width: 13px; height: 13px; }
@@ -535,9 +566,14 @@ li.place[aria-selected="true"] .place-dist { background: var(--card); }
 
 .statsbar {
   position: absolute;
-  left: 50%;
+  /* left+right+auto margins center a fit-content box; left:50% would cap its width at half the map */
+  left: 16px;
+  right: 16px;
+  margin-left: auto;
+  margin-right: auto;
+  width: -webkit-fit-content;
+  width: fit-content;
   bottom: 22px;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -557,8 +593,13 @@ li.place[aria-selected="true"] .place-dist { background: var(--card); }
 
 .stats-cluster {
   display: flex;
-  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 8px;
+  column-gap: 18px;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .stat { text-align: center; min-width: 64px; }
@@ -589,10 +630,12 @@ li.place[aria-selected="true"] .place-dist { background: var(--card); }
   background: var(--field-bg);
   padding: 8px;
   outline: none;
+  min-width: 0;
   max-width: 180px;
+  max-width: min(180px, 100%);
 }
 
-.statsbar .actions { display: flex; gap: 8px; align-items: center; }
+.statsbar .actions { display: flex; gap: 8px; align-items: center; max-width: 100%; }
 
 .pill-btn {
   display: inline-flex;
@@ -629,7 +672,7 @@ li.place[aria-selected="true"] .place-dist { background: var(--card); }
 .pill-btn.quiet:hover { background: var(--bg); color: var(--ink-soft); }
 
 .pill-btn.danger-solid {
-  background: var(--danger);
+  background: var(--danger-fill);
   color: #fff;
   min-height: 48px;
 }
@@ -958,9 +1001,17 @@ li.place[aria-selected="true"] .place-dist { background: var(--card); }
 
 .run-stats .icon-btn { margin-left: auto; }
 
-.run-stats .icon-btn[aria-pressed="false"] { color: var(--ink-faint); opacity: 0.6; }
+.run-stats .pill-btn { white-space: nowrap; }
+
+/* Armed End: stats hide so the row never widens; End stays at the right edge, Resume to its left */
+.run-stats.armed .rs { display: none; }
+
+.run-stats .run-resume { min-height: 48px; }
 
 body.run-active .statsbar { display: none; }
+
+/* .run-stats (10+48+10 px + 1px border + inset) would otherwise cover the Google logo/attribution */
+body.run-active #map { bottom: calc(69px + env(safe-area-inset-bottom, 0px)); }
 
 @media (min-width: 861px) {
   body.run-active .panel { opacity: 0.45; pointer-events: none; }
@@ -1081,10 +1132,20 @@ dialog label { display: block; font-size: 13px; font-weight: 700; color: var(--i
     display: block;
   }
 
+  /* The map ends where the sheet begins so Google's logo and attribution stay visible
+     (Maps Platform terms). sheet.js fires the map resize after each state change. */
   #mapwrap {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 48vh;
+    bottom: 48svh;
   }
+
+  body[data-sheet="peek"] #mapwrap { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+
+  body.run-active #mapwrap { bottom: 0; }
 
   .panel {
     position: fixed;
@@ -1154,26 +1215,34 @@ dialog label { display: block; font-size: 13px; font-weight: 700; color: var(--i
 
   body[data-sheet="peek"] .panel-scroll { overflow: hidden; }
 
+  /* Half only translates the full-height panel down; cap the scroller to the on-screen part
+     (48svh minus the 28px handle and 1px top border) so the last rows are reachable. */
+  body[data-sheet="half"] .panel-scroll {
+    max-height: calc(48vh - 29px);
+    max-height: calc(48svh - 29px);
+  }
+
   #places { overflow: visible; flex: none; }
 
   .search-row input { height: 48px; }
 
   .chip { min-height: 44px; }
 
+  /* #mapwrap already ends at the sheet's top edge, so the bar sits a fixed 12px above it */
   .statsbar {
     z-index: 20;
+    left: 10px;
+    right: 10px;
+    bottom: 12px;
     max-width: calc(100% - 20px);
     column-gap: 12px;
     padding: 10px 12px;
-    transition: bottom 0.28s cubic-bezier(0.33, 1, 0.22, 1), opacity 0.2s;
+    transition: opacity 0.2s;
   }
 
-  body[data-sheet="peek"] .statsbar { bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
-  body[data-sheet="half"] .statsbar {
-    bottom: calc(48vh + 12px);
-    bottom: calc(48svh + 12px);
-  }
   body[data-sheet="full"] .statsbar { opacity: 0; pointer-events: none; }
+
+  .stats-cluster { column-gap: 12px; }
 
   .stat { min-width: 56px; }
   .stat .value { font-size: 16px; }
@@ -1191,6 +1260,14 @@ dialog label { display: block; font-size: 13px; font-weight: 700; color: var(--i
 @media (max-width: 480px) {
   #previewBtn .btn-text, #saveRouteBtn .btn-text { display: none; }
   #previewBtn, #saveRouteBtn { width: 48px; padding: 9px 0; }
+  .stat { min-width: 48px; }
+  .statsbar select { max-width: 150px; }
+}
+
+@media (max-width: 360px) {
+  .statsbar { padding: 10px 8px; }
+  .stats-cluster { column-gap: 10px; }
+  .statsbar .actions { gap: 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

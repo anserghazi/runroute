@@ -42,6 +42,7 @@
   --band-line: #2a3047;
 
   --danger: #d92d20;
+  --danger-fill: #d92d20; /* solid fill under white text; --danger is for red text/icons */
   --warn-bg: #fef0c7;
   --warn-ink: #93370d;
   --warn-line: #fedf89;
@@ -103,6 +104,7 @@
     --band-line: #232a40;
 
     --danger: #f97066;
+    --danger-fill: #b42318;
     --warn-bg: #3a2d14;
     --warn-ink: #fec84b;
     --warn-line: #5a4418;
@@ -155,6 +157,7 @@
   --band-line: #232a40;
 
   --danger: #f97066;
+  --danger-fill: #b42318;
   --warn-bg: #3a2d14;
   --warn-ink: #fec84b;
   --warn-line: #5a4418;

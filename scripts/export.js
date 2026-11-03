@@ -127,7 +127,8 @@
     html.push("h2{font-size:15.5px;font-weight:800;margin:22px 0 6px;break-inside:avoid;break-after:avoid;display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #dddddd;padding-bottom:5px;}");
     html.push("h2 .leg-stats{font-weight:600;font-size:13px;color:#333333;white-space:nowrap;}");
     html.push("ol.steps{margin:0;padding-left:22px;font-size:13px;line-height:1.5;}");
-    html.push("ol.steps li{break-inside:avoid;margin:4px 0;display:flex;justify-content:space-between;gap:14px;list-style-position:outside;}");
+    html.push("ol.steps li{break-inside:avoid;margin:4px 0;display:list-item;list-style-position:outside;}");
+    html.push("ol.steps li .step-row{display:flex;justify-content:space-between;gap:14px;}");
     html.push("ol.steps li .instr{flex:1 1 auto;min-width:0;}");
     html.push("ol.steps li .instr div{margin-top:1px;}");
     html.push("ol.steps li .d{flex:none;color:#555555;white-space:nowrap;}");
@@ -180,8 +181,8 @@
            (its embedded Destination <div> renders as its own line). */
         var instr = steps[j].instructions || "";
         var d = stepDistText(steps[j]);
-        html.push("<li><span class=\"instr\">" + instr + "</span>" +
-          (d ? "<span class=\"d\">" + escapeHtml(d) + "</span>" : "") + "</li>");
+        html.push("<li><div class=\"step-row\"><span class=\"instr\">" + instr + "</span>" +
+          (d ? "<span class=\"d\">" + escapeHtml(d) + "</span>" : "") + "</div></li>");
       }
       html.push("</ol>");
     }

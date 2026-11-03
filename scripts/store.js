@@ -50,6 +50,13 @@
     return parsed;
   }
 
+  function findIndexById(arr, id) {
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i] && arr[i].id === id) return i;
+    }
+    return -1;
+  }
+
   function rescueCorrupt(raw) {
     try {
       localStorage.setItem(CORRUPT_KEY, raw);
@@ -151,12 +158,12 @@
     var frag = document.createDocumentFragment();
     routes.forEach(function (rec) {
       if (!rec || typeof rec !== "object" || !rec.id) return;
-      frag.appendChild(buildRow(rec, routes));
+      frag.appendChild(buildRow(rec));
     });
     listEl.appendChild(frag);
   }
 
-  function buildRow(rec, routes) {
+  function buildRow(rec) {
     var li = document.createElement("li");
     li.className = "saved-row";
     li.dataset.id = rec.id;
@@ -176,7 +183,15 @@
     main.appendChild(nm);
     main.appendChild(meta);
     main.addEventListener("click", function () {
-      loadRoute(rec, routes);
+      // The row may be stale (another tab, or a refresh that finished since render).
+      var current = readSaved();
+      var idx = findIndexById(current, rec.id);
+      if (idx === -1) {
+        renderList();
+        if (typeof toast === "function") toast("That route is no longer saved on this device.");
+        return;
+      }
+      loadRoute(current[idx]);
     });
 
     var del = document.createElement("button");
@@ -186,7 +201,7 @@
     del.innerHTML = TRASH_SVG;
     del.addEventListener("click", function () {
       if (confirmState && confirmState.id === rec.id) {
-        performDelete(rec, routes);
+        performDelete(rec);
       } else {
         enterConfirm(rec, li, del);
       }
@@ -218,13 +233,14 @@
     document.addEventListener("click", onDoc, true);
   }
 
-  function performDelete(rec, routes) {
+  function performDelete(rec) {
     clearConfirm(false);
+    var current = readSaved();
     var next = [];
-    routes.forEach(function (r) {
+    current.forEach(function (r) {
       if (!r || r.id !== rec.id) next.push(r);
     });
-    writeSaved(next);
+    if (next.length !== current.length) writeSaved(next);
     if (window.RR && RR.loadedRouteId === rec.id) RR.loadedRouteId = null;
     renderList();
     if (typeof toast === "function") {
@@ -269,12 +285,7 @@
     }
 
     var routes = readSaved();
-    var existingIdx = -1;
-    if (RR.loadedRouteId) {
-      for (var i = 0; i < routes.length; i++) {
-        if (routes[i] && routes[i].id === RR.loadedRouteId) { existingIdx = i; break; }
-      }
-    }
+    var existingIdx = RR.loadedRouteId ? findIndexById(routes, RR.loadedRouteId) : -1;
 
     if (existingIdx === -1 && routes.length >= MAX_SAVED) {
       if (dlg && dlg.open) dlg.close();
@@ -287,6 +298,10 @@
     var name = input ? input.value.replace(/^\s+|\s+$/g, "") : "";
     if (!name) name = defaultName();
 
+    var now = Date.now();
+    // The record's coordinate age is its oldest stop's: re-saving a loaded route
+    // must not restart the 30-day Places valve (spec §7.5).
+    var oldest = now;
     var stops = [];
     RR.selected.forEach(function (s) {
       if (!s || !s.location) return;
@@ -297,18 +312,21 @@
         lng: s.location.lng(),
         cat: s.cat || null
       });
+      var at = typeof s.refreshedAt === "number" ? s.refreshedAt : now;
+      if (at < oldest) oldest = at;
     });
 
-    var now = Date.now();
+    var label = typeof RR.home.saveLabel === "string" ? RR.home.saveLabel : RR.home.address;
+
     var rec = {
       id: existingIdx !== -1 ? routes[existingIdx].id : makeId(),
       name: name,
       savedAt: now,
-      coordsRefreshedAt: now,
+      coordsRefreshedAt: oldest,
       home: {
         lat: RR.home.lat,
         lng: RR.home.lng,
-        address: RR.home.address || "",
+        address: label || "",
         placeId: null
       },
       radiusM: typeof currentRadius === "function" ? currentRadius() : 0,
@@ -334,9 +352,13 @@
 
   /* ---------------- Load flow (§7.5) ---------------- */
 
-  function loadRoute(rec, routes) {
+  function loadRoute(rec) {
     if (!window.RR || !rec || !rec.home) return;
     if (!window.google || !window.google.maps || !RR.map) return;
+    if (RR.run && RR.run.active) {
+      if (typeof toast === "function") toast("End the run to change stops.");
+      return;
+    }
 
     if (typeof clearSelections === "function") clearSelections(true);
     RR.loadedRouteId = rec.id;
@@ -373,7 +395,7 @@
     setHome(
       new google.maps.LatLng(rec.home.lat, rec.home.lng),
       rec.home.address || "",
-      { preserve: true }
+      { preserve: true, saveLabel: rec.home.address || "" }
     );
 
     // No runSearch() here: a fresh load must make zero Places calls (spec §7.5).
@@ -384,9 +406,14 @@
       (Date.now() - rec.coordsRefreshedAt) <= FRESH_MS;
 
     if (fresh || !RR.placesService) {
-      applyStops(rec, rec.stops || [], 0);
+      var stored = rec.stops || [];
+      var missing = 0;
+      stored.forEach(function (st) {
+        if (st && st.placeId && (typeof st.lat !== "number" || typeof st.lng !== "number")) missing++;
+      });
+      applyStops(rec, stored, missing);
     } else {
-      refreshStops(rec, routes);
+      refreshStops(rec);
     }
   }
 
@@ -395,15 +422,18 @@
 
     // Show the saved stops as the place list + colored markers straight from
     // stored data (zero API calls). Tapping a category chip searches for more.
+    var refreshedAt = typeof rec.coordsRefreshedAt === "number" ? rec.coordsRefreshedAt : 0;
     RR.results.clear();
     stops.forEach(function (st) {
       if (!st || !st.placeId) return;
+      if (typeof st.lat !== "number" || typeof st.lng !== "number") return; // failed refresh: placeId kept, no coords
       var loc = new google.maps.LatLng(st.lat, st.lng);
       RR.selected.set(st.placeId, {
         id: st.placeId,
         name: st.name,
         location: loc,
-        cat: st.cat || null
+        cat: st.cat || null,
+        refreshedAt: refreshedAt
       });
       RR.results.set(st.placeId, {
         place_id: st.placeId,
@@ -437,7 +467,7 @@
     }
   }
 
-  function refreshStops(rec, routes) {
+  function refreshStops(rec) {
     var stops = rec.stops || [];
     if (!stops.length) {
       applyStops(rec, [], 0);
@@ -447,31 +477,47 @@
 
     var pending = stops.length;
     var failed = 0;
-    var good = [];
+    var refreshed = new Array(stops.length);
 
-    stops.forEach(function (st) {
+    stops.forEach(function (st, i) {
+      st = st || {};
       RR.placesService.getDetails(
         { placeId: st.placeId, fields: ["geometry", "name"] },
         function (place, status) {
-          if (status === google.maps.places.PlacesServiceStatus.OK &&
-              place && place.geometry && place.geometry.location) {
-            st.lat = place.geometry.location.lat();
-            st.lng = place.geometry.location.lng();
-            if (place.name) st.name = place.name;
-            good.push(st);
-          } else {
-            failed++; // kept in the record, excluded from this load
-          }
+          var ok = status === google.maps.places.PlacesServiceStatus.OK &&
+            place && place.geometry && place.geometry.location;
+          // A failed stop keeps placeId/name/cat (storable indefinitely) but drops its
+          // expired coordinates, so later fresh loads exclude it (spec §7.5).
+          refreshed[i] = {
+            placeId: st.placeId,
+            name: (ok && place.name) ? place.name : st.name,
+            lat: ok ? place.geometry.location.lat() : null,
+            lng: ok ? place.geometry.location.lng() : null,
+            cat: st.cat || null
+          };
+          if (!ok) failed++;
           pending--;
-          if (pending === 0) {
-            rec.coordsRefreshedAt = Date.now();
-            writeSaved(routes);
-            renderList();
-            applyStops(rec, good, failed);
-          }
+          if (pending === 0) finishRefresh(rec, refreshed, failed);
         }
       );
     });
+  }
+
+  function finishRefresh(rec, refreshed, failed) {
+    var at = Date.now();
+    // Re-read: other tabs, deletes and saves may have changed storage while
+    // getDetails was in flight. Merge only this record's stops, by id.
+    var current = readSaved();
+    var idx = findIndexById(current, rec.id);
+    if (idx !== -1 && current[idx].savedAt === rec.savedAt) { // not re-saved meanwhile
+      current[idx].stops = refreshed;
+      current[idx].coordsRefreshedAt = at;
+      writeSaved(current);
+    }
+    renderList();
+    rec.stops = refreshed;
+    rec.coordsRefreshedAt = at;
+    applyStops(rec, refreshed, failed);
   }
 
   /* ---------------- Init ---------------- */
@@ -483,6 +529,11 @@
 
     if (bound) return;
     bound = true;
+
+    // Another tab or PWA window changed the saved routes (key null = storage cleared).
+    window.addEventListener("storage", function (e) {
+      if (e.key === KEY || e.key === null) renderList();
+    });
 
     var toggle = $("savedToggle");
     var listEl = $("savedList");

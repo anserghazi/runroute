@@ -10,12 +10,19 @@
 (function () {
   var STATES = ["peek", "half", "full"];
   var mql = window.matchMedia ? window.matchMedia("(max-width: 860px)") : null;
-  var panel = null, handle = null, peekRow = null;
+  var panel = null, handle = null, peekRow = null, probe = null;
   var state = "half";
   var map = null;
   var installed = false;
 
   function isMobile() { return mql ? mql.matches : false; }
+
+  // #mapwrap's bottom edge follows data-sheet in CSS; the map must re-measure afterwards.
+  function kickMap() {
+    if (map && window.google && google.maps && google.maps.event) {
+      setTimeout(function () { google.maps.event.trigger(map, "resize"); }, 300);
+    }
+  }
 
   function setState(next) {
     if (STATES.indexOf(next) === -1) return;
@@ -23,9 +30,7 @@
     if (!isMobile()) return;
     document.body.setAttribute("data-sheet", next);
     if (panel) panel.style.transform = "";
-    if (map && window.google && google.maps && google.maps.event) {
-      setTimeout(function () { google.maps.event.trigger(map, "resize"); }, 300);
-    }
+    kickMap();
   }
 
   function getState() { return state; }
@@ -44,27 +49,65 @@
 
   function onModeChange() {
     if (isMobile()) install(); else uninstall();
+    kickMap();
   }
 
   /* ---- Pixel positions for dragging (CSS calc governs at rest) ---- */
 
+  // Resolves the same 48svh and env(safe-area-inset-bottom) the CSS rest positions use,
+  // which innerHeight and a bare 88px cannot.
+  function ensureProbe() {
+    if (probe) return probe;
+    probe = document.createElement("div");
+    probe.setAttribute("aria-hidden", "true");
+    var s = probe.style;
+    s.position = "fixed";
+    s.left = "0";
+    s.top = "0";
+    s.width = "0";
+    s.boxSizing = "content-box";
+    s.visibility = "hidden";
+    s.pointerEvents = "none";
+    s.height = "48vh";
+    s.height = "48svh"; // ignored where svh is unsupported, leaving the vh fallback
+    s.paddingBottom = "env(safe-area-inset-bottom, 0px)";
+    document.body.appendChild(probe);
+    return probe;
+  }
+
   function positions() {
     var H = panel.offsetHeight;
-    var vh = window.innerHeight;
+    var halfPx = Math.round(window.innerHeight * 0.48);
+    var inset = 0;
+    try {
+      var cs = window.getComputedStyle(ensureProbe());
+      var h = parseFloat(cs.height);
+      var pb = parseFloat(cs.paddingBottom);
+      if (h > 0) halfPx = h;
+      if (pb > 0) inset = pb;
+    } catch (err) { /* keep innerHeight fallback */ }
     return {
       full: 0,
-      half: Math.max(0, H - Math.round(vh * 0.48)),
-      peek: Math.max(0, H - 88)
+      half: Math.max(0, H - halfPx),
+      peek: Math.max(0, H - 88 - inset)
     };
+  }
+
+  // translateY actually applied right now (matrix m42 / matrix3d m42), or null.
+  function computedTY() {
+    var t;
+    try { t = window.getComputedStyle(panel).transform; } catch (err) { return null; }
+    if (!t || t === "none") return t === "none" ? 0 : null;
+    var m = t.match(/^matrix(3d)?\(([^)]+)\)$/);
+    if (!m) return null;
+    var v = m[2].split(",");
+    var ty = parseFloat(m[1] ? v[13] : v[5]);
+    return isFinite(ty) ? ty : null;
   }
 
   function bindDrag() {
     var startPointerY = 0, startTY = 0, dragging = false, lastY = 0, lastT = 0, velocity = 0;
-
-    function currentTY() {
-      var pos = positions();
-      return pos[state] != null ? pos[state] : pos.half;
-    }
+    var dragPos = null;
 
     handle.addEventListener("pointerdown", function (e) {
       if (!isMobile()) return;
@@ -73,7 +116,9 @@
       lastY = e.clientY;
       lastT = e.timeStamp;
       velocity = 0;
-      startTY = currentTY();
+      dragPos = positions();
+      var real = computedTY(); // read before transition:none so a mid-animation grab starts in place
+      startTY = real != null ? real : (dragPos[state] != null ? dragPos[state] : dragPos.half);
       panel.style.transition = "none";
       try { handle.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     });
@@ -81,8 +126,8 @@
     handle.addEventListener("pointermove", function (e) {
       if (!dragging) return;
       var dy = e.clientY - startPointerY;
-      var pos = positions();
-      var ty = Math.min(Math.max(startTY + dy, pos.full), pos.peek);
+      var pos = dragPos || positions();
+      var ty = Math.min(Math.max(startTY + dy, pos.full), Math.max(pos.peek, startTY));
       panel.style.transform = "translateY(" + ty + "px)";
       var dt = e.timeStamp - lastT;
       if (dt > 0) velocity = (e.clientY - lastY) / dt; // px per ms, + = down

@@ -50,6 +50,8 @@
     open: false,
     session: 0,         // bumped per open/close to invalidate stale async work
     seekToken: 0,
+    seeking: false,     // the current seekToken's chain has not landed or ended yet
+    gapHold: false,     // gap chip stays up past GAP_CHIP_MS until the walk lands
     samples: [],        // [{ latLng, cumM }]
     totalM: 0,
     cache: [],          // sample index -> panoId string | null; undefined = unknown
@@ -169,7 +171,9 @@
     state.playing = false;
     state.atEnd = false;
     state.stops = buildStops(route);
-    clearTimeout(state.timer);
+    state.seeking = false;
+    state.gapHold = false;
+    cancelTick();
     clearTimeout(state.chipTimer);
     state.chipTimer = null;
 
@@ -202,7 +206,9 @@
     state.seekToken++;
     state.playing = false;
     state.atEnd = false;
-    clearTimeout(state.timer);
+    state.seeking = false;
+    state.gapHold = false;
+    cancelTick();
     clearTimeout(state.chipTimer);
     state.chipTimer = null;
     if (els) {
@@ -343,9 +349,16 @@
     if (ms) {
       state.chipTimer = setTimeout(function () {
         state.chipTimer = null;
-        if (els.gap) els.gap.hidden = true;
+        if (els.gap && !state.gapHold) els.gap.hidden = true;
       }, ms);
     }
+  }
+
+  /* Ends the gap chip's hold; hides it now unless its minimum time is still running. */
+  function releaseGapChip() {
+    if (!state.gapHold) return;
+    state.gapHold = false;
+    if (!state.chipTimer && els && els.gap) els.gap.hidden = true;
   }
 
   /* Hides only an untimed chip (the loading state); a timed chip
@@ -384,6 +397,8 @@
     try { state.pano.setPov({ heading: headingAt(i), pitch: 0 }); } catch (e) { /* ignore */ }
     if (els.scrub) els.scrub.value = String(i);
     updatePos();
+    state.seeking = false;
+    releaseGapChip();
     clearLoadingChip();
     prefetch(i);
     return checkStops(i);
@@ -422,12 +437,13 @@
   }
 
   function setPlaying(on) {
-    clearTimeout(state.timer);
+    cancelTick();
     state.playing = !!on;
     if (on) {
       state.atEnd = false;
       setPlayIcon("pause");
-      scheduleTick(SPEEDS[state.speedIdx].ms);
+      /* A seek still walking schedules the next tick when it lands. */
+      if (!state.seeking) scheduleTick(SPEEDS[state.speedIdx].ms);
     } else if (!state.atEnd) {
       setPlayIcon("play");
     }
@@ -438,7 +454,19 @@
     state.timer = setTimeout(tick, ms);
   }
 
+  function cancelTick() {
+    clearTimeout(state.timer);
+    state.timer = null;
+  }
+
+  /* For a seek that ended without landing: keep playback moving. */
+  function resumeTicking() {
+    state.seeking = false;
+    if (state.playing) scheduleTick(SPEEDS[state.speedIdx].ms);
+  }
+
   function tick() {
+    state.timer = null;
     if (!state.open || !state.playing) return;
     seekForward(state.idx + 1);
   }
@@ -455,7 +483,7 @@
     for (var i = 0; i < state.stops.length; i++) state.stops[i].fired = false;
     state.playing = true;
     setPlayIcon("pause");
-    clearTimeout(state.timer);
+    cancelTick();
     seekForward(0);
   }
 
@@ -463,7 +491,9 @@
     state.idx = state.samples.length ? state.samples.length - 1 : 0;
     if (els && els.scrub) els.scrub.value = String(state.idx);
     updatePos();
-    clearTimeout(state.timer);
+    cancelTick();
+    state.seeking = false;
+    releaseGapChip();
     state.playing = false;
     state.atEnd = true;
     setPlayIcon("replay");
@@ -472,7 +502,7 @@
   function cycleSpeed() {
     state.speedIdx = (state.speedIdx + 1) % SPEEDS.length;
     applySpeedLabel();
-    if (state.playing) scheduleTick(SPEEDS[state.speedIdx].ms);
+    if (state.playing && state.timer) scheduleTick(SPEEDS[state.speedIdx].ms);
   }
 
   function applySpeedLabel() {
@@ -490,22 +520,27 @@
   function seekForward(start, opts) {
     opts = opts || {};
     var sess = state.session;
+    var token = ++state.seekToken;
     var nulls = 0;
+    state.seeking = true;
+    releaseGapChip();
 
     function tryIdx(i) {
-      if (sess !== state.session || !state.open) return;
+      if (sess !== state.session || token !== state.seekToken || !state.open) return;
       if (i >= state.samples.length) {
         if (opts.onExhausted) opts.onExhausted();
         else reachEnd();
         return;
       }
       ensure(i, function (id) {
-        if (sess !== state.session || !state.open) return;
+        if (sess !== state.session || token !== state.seekToken || !state.open) return;
         if (id === null) {
           nulls++;
           if (nulls === GAP_RUN && !opts.suppressGap) {
+            state.gapHold = true;
             showChip("No Street View along this stretch — skipping ahead…", GAP_CHIP_MS);
           }
+          prefetch(i);   // landAt's prefetch stops at idx+6; keep the gap walk 4-wide
           tryIdx(i + 1);
           return;
         }
@@ -525,6 +560,9 @@
     if (target > n - 1) target = n - 1;
     var sess = state.session;
     var token = ++state.seekToken;
+    state.seeking = true;
+    cancelTick();   // a pending tick would start a forward walk that supersedes this seek
+    releaseGapChip();
 
     var cand = [target];
     for (var d = 1; d < n; d++) {
@@ -535,7 +573,7 @@
 
     function tryNext() {
       if (sess !== state.session || token !== state.seekToken || !state.open) return;
-      if (p >= cand.length) return;   // nothing resolvable anywhere: stay put
+      if (p >= cand.length) { resumeTicking(); return; }   // nothing resolvable anywhere: stay put
       var i = cand[p++];
       ensure(i, function (id) {
         if (sess !== state.session || token !== state.seekToken || !state.open) return;
@@ -556,10 +594,13 @@
   function stepDir(dir) {
     var sess = state.session;
     var token = ++state.seekToken;
+    state.seeking = true;
+    cancelTick();
+    releaseGapChip();
 
     function tryIdx(i) {
       if (sess !== state.session || token !== state.seekToken || !state.open) return;
-      if (i < 0 || i >= state.samples.length) return;
+      if (i < 0 || i >= state.samples.length) { resumeTicking(); return; }
       ensure(i, function (id) {
         if (sess !== state.session || token !== state.seekToken || !state.open) return;
         if (id === null || id === state.lastPanoId) { tryIdx(i + dir); return; }

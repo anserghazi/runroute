@@ -31,15 +31,27 @@
     } catch (e) { return null; }
   }
 
+  function normMode(m) {
+    return m === "light" || m === "dark" ? m : "auto";
+  }
+
+  /* The page's mode lives here, not in storage: when localStorage throws,
+     set() can't persist, and re-reading storage would undo the choice. */
+  var current = normMode(stored() || document.documentElement.dataset.theme);
+
+  function manual() {
+    return current === "auto" ? null : current;
+  }
+
   function effective() {
-    var s = stored();
+    var s = manual();
     if (s) return s;
     return media && media.matches ? "dark" : "light";
   }
 
   function syncMetas() {
     if (!metas.length) collectMetas();
-    var s = stored();
+    var s = manual();
     for (var i = 0; i < metas.length; i++) {
       if (s) {
         metas[i].el.setAttribute("content", s === "dark" ? DARK_META : LIGHT_META);
@@ -50,7 +62,7 @@
   }
 
   function applyDom() {
-    var s = stored();
+    var s = manual();
     if (s) {
       document.documentElement.dataset.theme = s;
     } else {
@@ -68,6 +80,7 @@
   }
 
   function set(mode) {
+    current = normMode(mode);
     try {
       if (mode === "light" || mode === "dark") localStorage.setItem(KEY, mode);
       else localStorage.removeItem(KEY);
@@ -83,7 +96,7 @@
   }
 
   function modeNow() {
-    return stored() || "auto";
+    return current;
   }
 
   function labelFor(mode) {
@@ -124,12 +137,12 @@
 
   // Another tab changed the theme.
   window.addEventListener("storage", function (e) {
-    if (e.key === KEY) { applyDom(); notify(); }
+    if (e.key === KEY) { current = normMode(stored()); applyDom(); notify(); }
   });
 
   // OS theme changed while in Auto.
   if (media) {
-    var onMedia = function () { if (!stored()) { syncMetas(); notify(); } };
+    var onMedia = function () { if (current === "auto") { syncMetas(); notify(); } };
     if (media.addEventListener) media.addEventListener("change", onMedia);
     else if (media.addListener) media.addListener(onMedia);
   }

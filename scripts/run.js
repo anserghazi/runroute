@@ -167,6 +167,7 @@ window.RRRun = (function () {
     var verts = [];
     var cum = 0;
     var prev = null;
+    var legEndCum = [];
     var li, si, pi;
     for (li = 0; li < legs.length; li++) {
       var lsteps = legs[li].steps || [];
@@ -192,6 +193,7 @@ window.RRRun = (function () {
         rec.endCum = cum;
         steps.push(rec);
       }
+      legEndCum.push(cum);
     }
     if (!steps.length || verts.length < 2) return null;
 
@@ -205,7 +207,7 @@ window.RRRun = (function () {
       if (!loc) continue;
       var sp = projLL(loc);
       var name = (snap[k] && snap[k].name) ? snap[k].name : ("Stop " + (k + 1));
-      stops.push({ name: String(name), x: sp.x, y: sp.y });
+      stops.push({ name: String(name), x: sp.x, y: sp.y, cum: legEndCum[k] });
     }
 
     var homeP = null;
@@ -226,24 +228,35 @@ window.RRRun = (function () {
     };
   }
 
-  /* Clamped point-to-segment projection over verts[from..to+1]. */
-  function scan(p, from, to, minAlong) {
+  /* Clamped point-to-segment projection over verts[from..to+1].
+     minAlong/maxAlong (either may be null) clip each segment to that
+     along-route range, so a segment straddling a bound still yields its
+     nearest in-range point instead of being dropped. */
+  function scan(p, from, to, minAlong, maxAlong) {
     var verts = st.g.verts;
     var best = null;
     for (var i = from; i <= to; i++) {
       var A = verts[i], B = verts[i + 1];
+      if (minAlong != null && B.cum < minAlong) continue;
+      if (maxAlong != null && A.cum > maxAlong) continue;
       var abx = B.x - A.x, aby = B.y - A.y;
       var len2 = abx * abx + aby * aby;
-      var t = 0;
+      var segLen = B.cum - A.cum;
+      var tLo = 0, tHi = 1;
+      if (segLen > 0) {
+        if (minAlong != null) tLo = Math.max(0, (minAlong - A.cum) / segLen);
+        if (maxAlong != null) tHi = Math.min(1, (maxAlong - A.cum) / segLen);
+      }
+      if (tLo > tHi) continue;
+      var t = tLo;
       if (len2 > 0) {
         t = ((p.x - A.x) * abx + (p.y - A.y) * aby) / len2;
-        if (t < 0) t = 0; else if (t > 1) t = 1;
+        if (t < tLo) t = tLo; else if (t > tHi) t = tHi;
       }
       var sx = A.x + t * abx, sy = A.y + t * aby;
       var dx = p.x - sx, dy = p.y - sy;
       var dist = Math.sqrt(dx * dx + dy * dy);
-      var along = A.cum + t * (B.cum - A.cum);
-      if (minAlong != null && along < minAlong) continue;
+      var along = A.cum + t * segLen;
       if (!best || dist < best.dist) best = { dist: dist, along: along, seg: i, x: sx, y: sy };
     }
     return best;
@@ -395,24 +408,44 @@ window.RRRun = (function () {
 
     var p = st.g.projNum(c.latitude, c.longitude);
 
-    // Snap: window [last-5, last+30]; full scan at start and while off-route
+    // Snap: window [last-5, last+30]; full scan at start, while off-route
+    // and on the first fix after the page was hidden (st.seg reset to null)
     var segCount = st.g.verts.length - 1;
     var from = 0, to = segCount - 1;
     if (st.seg != null && !st.off) {
       from = Math.max(0, st.seg - 5);
       to = Math.min(segCount - 1, st.seg + 30);
     }
-    var best = scan(p, from, to, null);
+    var best = scan(p, from, to, null, null);
     if (!best) return;
     var deviation = best.dist;
 
-    // Along-distance never regresses more than 30 m in one fix
+    // Along-range this fix may land in. Every loop starts and ends at home,
+    // so an unbounded nearest-segment pick can snap a runner standing at the
+    // start onto the closing segment and finish the run on the first fix.
+    var lo = null, hi;
+    if (st.along == null) {
+      hi = Math.max(100, 0.25 * st.g.total);
+    } else {
+      // Never regress more than 30 m; never jump forward further than a
+      // runner could cover since the last accepted fix (dt includes any
+      // time the page was hidden, since lastFixTime only moves on accepted fixes).
+      var gap = st.lastFixTime ? Math.max(1, (now - st.lastFixTime) / 1000) : 1;
+      lo = st.along - 30;
+      hi = st.along + 100 + acc + Math.max(6, 2 * st.speed) * gap;
+    }
     var chosen = best;
-    if (st.along != null && best.along < st.along - 30) {
-      var constrained = scan(p, from, to, st.along - 30);
-      chosen = constrained || { dist: best.dist, along: st.along - 30, seg: st.seg, x: best.x, y: best.y };
+    if ((lo != null && best.along < lo) || best.along > hi) {
+      var constrained = scan(p, from, to, lo, hi);
+      chosen = constrained || {
+        dist: best.dist,
+        along: Math.min(hi, Math.max(lo == null ? 0 : lo, best.along)),
+        seg: st.seg != null ? st.seg : best.seg,
+        x: best.x, y: best.y
+      };
     }
     st.seg = chosen.seg;
+    st.fixCount++;
     var prevAlong = st.along;
     st.along = chosen.along;
 
@@ -431,7 +464,7 @@ window.RRRun = (function () {
 
     // Marker at snapped point while raw deviation <= 15 m + accuracy, else raw
     var raw = { lat: c.latitude, lng: c.longitude };
-    var mpos = (deviation <= 15 + acc) ? st.g.unproject(chosen.x, chosen.y) : raw;
+    var mpos = (chosen.dist <= 15 + acc) ? st.g.unproject(chosen.x, chosen.y) : raw;
     placeRunner(mpos, raw, acc);
 
     // Follow mode: panTo throttled to 1/s
@@ -499,22 +532,30 @@ window.RRRun = (function () {
       }
     }
 
-    // Stop reached (next stop in visit order, once per stop)
-    if (st.nextStop < st.g.stops.length) {
+    // Stop reached (visit order, once per stop): within 25 m of the marker,
+    // or along-route progress has passed it (a fix may never land inside
+    // 25 m). Several stops passed in one fix are counted; only the last speaks.
+    var nStops = st.g.stops.length;
+    var reached = null;
+    while (st.nextStop < nStops) {
       var s = st.g.stops[st.nextStop];
       var dx = p.x - s.x, dy = p.y - s.y;
-      if (Math.sqrt(dx * dx + dy * dy) <= 25) {
-        st.stopsReached++;
-        speak("Reached " + s.name + ". Stop " + (st.nextStop + 1) + " of " + st.g.stops.length + ".");
-        st.nextStop++;
-        updateNextStop();
-      }
+      var near = Math.sqrt(dx * dx + dy * dy) <= 25;
+      var passed = typeof s.cum === "number" && st.along >= s.cum - 25;
+      if (!near && !passed) break;
+      st.stopsReached++;
+      st.nextStop++;
+      reached = { name: s.name, k: st.nextStop };
+    }
+    if (reached) {
+      speak("Reached " + reached.name + ". Stop " + reached.k + " of " + nStops + ".");
+      updateNextStop();
     }
 
     // Finish: within 30 m of home AND along > 80% of total
     if (st.g.homeP && st.along > 0.8 * st.g.total) {
       var hx = p.x - st.g.homeP.x, hy = p.y - st.g.homeP.y;
-      if (Math.sqrt(hx * hx + hy * hy) <= 30) finishRun();
+      if (Math.sqrt(hx * hx + hy * hy) <= 30) finishRun(now);
     }
   }
 
@@ -552,7 +593,7 @@ window.RRRun = (function () {
   function buildState(g) {
     st = {
       active: true, ended: false, g: g,
-      cur: 0, along: null, seg: null, hasFix: false,
+      cur: 0, along: null, seg: null, hasFix: false, fixCount: 0,
       speed: 0, lastFixTime: 0, lastPan: 0, follow: true,
       preCued: [], nextStop: 0, stopsReached: 0,
       off: false, offStreak: 0, offFirstAt: 0, offSpokeAt: 0,
@@ -576,7 +617,7 @@ window.RRRun = (function () {
     var ui = $("runUI");
     if (ui) ui.hidden = false;
 
-    try { RR.directionsRenderer.setOptions({ draggable: false }); } catch (e) { /* ignore */ }
+    setRouteEditable(false);
     try { RR.map.setZoom(17); } catch (e) { /* ignore */ }
     try {
       st.dragListener = RR.map.addListener("dragstart", function () {
@@ -641,9 +682,11 @@ window.RRRun = (function () {
     if (!st.endArmed) {
       st.endArmed = true;
       eb.textContent = "End run?";
+      var bar = runStatsEl();
+      if (bar) bar.classList.add("armed");
       var resume = document.createElement("button");
       resume.type = "button";
-      resume.className = "pill-btn secondary";
+      resume.className = "pill-btn secondary run-resume";
       resume.textContent = "Resume";
       resume.addEventListener("click", function () { resetEndButton(); });
       st.resumeBtn = resume;
@@ -661,20 +704,32 @@ window.RRRun = (function () {
       if (st.resumeBtn && st.resumeBtn.parentNode) st.resumeBtn.parentNode.removeChild(st.resumeBtn);
       st.resumeBtn = null;
     }
+    var bar = runStatsEl();
+    if (bar) bar.classList.remove("armed");
     var eb = $("runEndBtn");
     if (eb) eb.textContent = "End";
   }
 
+  function runStatsEl() {
+    var ui = $("runUI");
+    return ui ? ui.querySelector(".run-stats") : null;
+  }
+
   function confirmEnd() {
     if (!st || !st.active) return;
+    resetEndButton();
     stopGuidance(true);
     showSummary();
   }
 
-  function finishRun() {
+  function finishRun(now) {
     if (!st || !st.active || st.ended) return;
     var along = st.along || 0;
-    var elapsed = (Date.now() - st.startedAt) / 1000;
+    var elapsed = ((now || Date.now()) - st.startedAt) / 1000;
+    // Real progress only: along-route distance no runner covers faster than
+    // 8 m/s on average, reached through at least a few tracked fixes.
+    if (elapsed <= 0 || along / elapsed > 8 || st.fixCount < 5) return;
+    resetEndButton();
     var msg = "Run complete. " + (along / 1000).toFixed(1) + " kilometers in " + fmtClock(elapsed) + ".";
     stopGuidance(false); // keep speech alive for the final cue
     preemptSpeak(msg);
@@ -710,7 +765,25 @@ window.RRRun = (function () {
       if (el) el.hidden = true;
     }
     resetEndButton();
-    try { RR.directionsRenderer.setOptions({ draggable: true }); } catch (e) { /* ignore */ }
+    setRouteEditable(true);
+  }
+
+  /* Route drag handles + result-marker taps off for the run, back on after.
+     The renderer applies draggable only when it renders again, so re-set the
+     same directions (preserveViewport keeps the camera). */
+  function setRouteEditable(on) {
+    try {
+      RR.directionsRenderer.setOptions({ draggable: on });
+      var dir = RR.hasRoute ? RR.directionsRenderer.getDirections() : null;
+      if (dir) RR.directionsRenderer.setDirections(dir);
+    } catch (e) { /* ignore */ }
+    try {
+      if (RR.markers && RR.markers.forEach) {
+        RR.markers.forEach(function (m) {
+          try { m.setClickable(on); } catch (e) { /* ignore */ }
+        });
+      }
+    } catch (e) { /* ignore */ }
   }
 
   /* ---------------- summary dialog ---------------- */
@@ -893,6 +966,11 @@ window.RRRun = (function () {
   document.addEventListener("visibilitychange", function () {
     if (!st || !st.active) return;
     if (document.visibilityState === "visible") {
+      // The runner may be far past the [seg-5, seg+30] window after a lock:
+      // force a full rescan, whose forward cap grows with the hidden time.
+      st.seg = null;
+      st.offStreak = 0;
+      st.offFirstAt = 0;
       requestWakeLock(); // re-request the lock
       startWatch();      // never trust the old watch — clearWatch + re-issue
     }
