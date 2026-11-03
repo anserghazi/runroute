@@ -244,34 +244,20 @@
     return { samples: samples, totalM: cum };
   }
 
-  /* Stops in route visit order (waypoint_order + RR.waypointNames when
-     available, else RR.selected insertion order). */
+  /* Stops in route visit order, from the snapshot calculateRoute() takes
+     when the route is built (drag-safe; see app.js RR.visitStops). */
   function buildStops(route) {
     var out = [];
-    var sel = [];
-    try {
-      RR.selected.forEach(function (s) { sel.push(s); });
-    } catch (e) { return out; }
-    if (!sel.length) return out;
-
-    var order = route && route.waypoint_order;
-    var seq = [];
-    var i;
-    if (order && order.length === sel.length) {
-      for (i = 0; i < order.length; i++) seq.push(order[i]);
-    } else {
-      for (i = 0; i < sel.length; i++) seq.push(i);
+    var snap = (RR.visitStops && RR.visitStops.length) ? RR.visitStops : [];
+    if (!snap.length) {
+      try { RR.selected.forEach(function (s) { snap.push(s); }); } catch (e) { return out; }
     }
-    var names = (RR.waypointNames && RR.waypointNames.length === sel.length)
-      ? RR.waypointNames : null;
-
-    for (i = 0; i < seq.length; i++) {
-      var s = sel[seq[i]];
+    for (var i = 0; i < snap.length; i++) {
+      var s = snap[i];
       if (!s) continue;
       var ll = toLatLng(s.location);
       if (!ll) continue;
-      var name = names ? (names[seq[i]] || s.name || "") : (s.name || "");
-      out.push({ name: String(name), latLng: ll, k: i + 1, fired: false });
+      out.push({ name: String(s.name || ""), latLng: ll, k: i + 1, fired: false });
     }
     return out;
   }

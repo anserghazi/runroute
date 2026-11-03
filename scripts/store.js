@@ -376,7 +376,9 @@
       { preserve: true }
     );
 
-    if (typeof runSearch === "function") runSearch();
+    // No runSearch() here: a fresh load must make zero Places calls (spec §7.5).
+    // Invalidate any search still in flight so it can't overwrite the stop list.
+    RR.searchToken++;
 
     var fresh = rec.coordsRefreshedAt &&
       (Date.now() - rec.coordsRefreshedAt) <= FRESH_MS;
@@ -389,18 +391,37 @@
   }
 
   function applyStops(rec, stops, failed) {
+    if (RR.loadedRouteId !== rec.id) return; // another route was loaded/cleared meanwhile
+
+    // Show the saved stops as the place list + colored markers straight from
+    // stored data (zero API calls). Tapping a category chip searches for more.
+    RR.results.clear();
     stops.forEach(function (st) {
       if (!st || !st.placeId) return;
+      var loc = new google.maps.LatLng(st.lat, st.lng);
       RR.selected.set(st.placeId, {
         id: st.placeId,
         name: st.name,
-        location: new google.maps.LatLng(st.lat, st.lng),
+        location: loc,
         cat: st.cat || null
       });
+      RR.results.set(st.placeId, {
+        place_id: st.placeId,
+        name: st.name,
+        geometry: { location: loc },
+        rrCat: st.cat || null
+      });
     });
-    RR.selected.forEach(function (s, id) {
-      if (typeof syncSelectionUI === "function") syncSelectionUI(id);
-    });
+    if (typeof renderResults === "function") renderResults();
+    var countEl = $("placeCount");
+    if (countEl && RR.results.size) countEl.textContent = "saved stops";
+    var listEl = $("places");
+    if (listEl && RR.results.size) {
+      var hint = document.createElement("li");
+      hint.className = "hint";
+      hint.textContent = "Tap a category above to find more places nearby.";
+      listEl.appendChild(hint);
+    }
 
     if (RR.selected.size && typeof calculateRoute === "function") {
       calculateRoute(function (ok) {
@@ -411,8 +432,8 @@
     }
 
     if (typeof toast === "function") {
-      toast("Loaded '" + (rec.name || "Running loop") + "'.");
-      if (failed) toast(failed + " stop(s) could no longer be found.");
+      if (failed) toast(failed + " stop(s) could no longer be found.", 4000);
+      else toast("Loaded '" + (rec.name || "Running loop") + "'.");
     }
   }
 

@@ -80,31 +80,18 @@
 
   function buildDoc(route) {
     var legs = route.legs || [];
-    var order = route.waypoint_order;
-
-    /* Stops in request order (RR.selected iterates in the same insertion
-       order calculateRoute() used to build waypointNames). */
-    var reqStops = [];
-    RR.selected.forEach(function (s) {
-      reqStops.push({ name: s.name, cat: s.cat || null });
-    });
-    /* Names from RR.waypointNames (authoritative per §8.2); cats ride along
-       by the same index when the arrays agree. */
-    function stopAt(reqIdx) {
-      var name = (RR.waypointNames && RR.waypointNames[reqIdx] != null)
-        ? RR.waypointNames[reqIdx]
-        : (reqStops[reqIdx] ? reqStops[reqIdx].name : "Stop " + (reqIdx + 1));
-      var cat = reqStops[reqIdx] ? reqStops[reqIdx].cat : null;
-      return { name: String(name), cat: cat };
-    }
-
-    /* Visit-order stop list: leg i (i < legs.length-1) arrives at
-       stop order[i]; the final leg returns to Start. */
+    /* Leg i (i < legs.length-1) arrives at RR.visitStops[i] — the visit-order
+       snapshot taken when the route was calculated (stays valid across drags,
+       which keep stopover count and order). The final leg returns to Start. */
+    var snap = RR.visitStops || [];
     var visitStops = [];
     var i;
     for (i = 0; i < legs.length - 1; i++) {
-      var reqIdx = (order && order.length > i) ? order[i] : i;
-      visitStops.push(stopAt(reqIdx));
+      var s = snap[i];
+      visitStops.push({
+        name: String(s && s.name ? s.name : "Stop " + (i + 1)),
+        cat: s && s.cat ? s.cat : null
+      });
     }
 
     var name = savedRouteName() || "Running loop";

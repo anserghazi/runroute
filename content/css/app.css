@@ -690,7 +690,7 @@ li.place[aria-selected="true"] .place-dist { background: var(--card); }
   align-items: center;
   justify-content: center;
   background: var(--bg);
-  z-index: 20;
+  z-index: 4; /* above the map, below statsbar (10) and the panel/sheet (15) */
   padding: 24px;
 }
 

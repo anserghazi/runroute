@@ -196,17 +196,15 @@ window.RRRun = (function () {
     if (!steps.length || verts.length < 2) return null;
 
     // Stops in optimized visit order: leg k ends at stop k; last leg ends home.
-    var order = route.waypoint_order || [];
-    var names = RR.waypointNames || [];
+    // Names come from the visit-order snapshot taken at route time (drag-safe).
+    var snap = RR.visitStops || [];
     var stops = [];
     var nStops = Math.max(0, legs.length - 1);
     for (var k = 0; k < nStops; k++) {
       var loc = legs[k].end_location;
       if (!loc) continue;
       var sp = projLL(loc);
-      var name = (order.length === nStops && names[order[k]])
-        ? names[order[k]]
-        : (names[k] || ("Stop " + (k + 1)));
+      var name = (snap[k] && snap[k].name) ? snap[k].name : ("Stop " + (k + 1));
       stops.push({ name: String(name), x: sp.x, y: sp.y });
     }
 

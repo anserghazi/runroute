@@ -24,6 +24,8 @@ var RR = {
   routeMeters: 0,
   paceSecPerKm: 360,
   searchToken: 0,
+  routeToken: 0,         // invalidates in-flight Directions responses
+  visitStops: [],        // selected stops in optimized VISIT order, snapshotted at route time
   restoring: false,
   mapsLoaded: false,
   loadedRouteId: null,   // id of the saved route currently loaded (store.js)
@@ -644,11 +646,13 @@ function calculateRoute(onDone) {
 
   var waypts = [];
   var names = [];
+  var reqStops = [];
   RR.selected.forEach(function (s) {
     waypts.push({ location: s.location, stopover: true });
     names.push(s.name);
+    reqStops.push(s);
   });
-  RR.waypointNames = names;
+  var token = ++RR.routeToken;
 
   RR.directionsService.route(
     {
@@ -659,7 +663,20 @@ function calculateRoute(onDone) {
       travelMode: google.maps.TravelMode.WALKING
     },
     function (response, status) {
+      // A newer request, a deselect-to-empty, or a Clear happened while this was in flight.
+      if (token !== RR.routeToken || !RR.selected.size) {
+        if (typeof onDone === "function") onDone(false);
+        return;
+      }
       if (status === "OK") {
+        // Snapshot stop names in visit order NOW: a later drag makes the renderer
+        // re-request, and its result's waypoint_order no longer maps to `names`.
+        var order = response.routes[0].waypoint_order;
+        if (!order || order.length !== reqStops.length) {
+          order = reqStops.map(function (_, i) { return i; });
+        }
+        RR.waypointNames = names;
+        RR.visitStops = order.map(function (i) { return reqStops[i]; });
         var hadRoute = RR.hasRoute;
         RR.hasRoute = true;
         if (RR.homeMarker) RR.homeMarker.setMap(null);
@@ -685,8 +702,10 @@ function calculateRoute(onDone) {
 }
 
 function clearRouteDisplay() {
+  RR.routeToken++;
   RR.hasRoute = false;
   RR.routeMeters = 0;
+  RR.visitStops = [];
   RR.directionsRenderer.setMap(null);
   if (RR.homeMarker && RR.home) RR.homeMarker.setMap(RR.map);
   $("statsbar").hidden = true;
