@@ -1,64 +1,131 @@
-<!doctype HTML>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-
-  <title>RunRoute | Route Generator</title>
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
-  <script
-          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAYmrpoOWCzar68Hf6eb5i5FxKEjYotok&libraries=places&callback=initMap&libraries=places&v=weekly"
-          defer
-  ></script>
-  <script src="../../scripts/mapUI.js"></script>
-  <script src="../../scripts/sliderUI.js"></script>
-
-
   <meta charset="utf-8">
-  <meta name="description" content="Jogging Route Generator">
-  <meta name="keywords" content="runroute, jogging-route, running-route, places-to-run">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RunRoute — Route Planner</title>
+  <meta name="description" content="Plan a running loop from your front door: pick nearby parks, sights and cafés, get a door-to-door route with distance, time, GPX export and a shareable link.">
   <meta name="author" content="Anser Ghazi">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="stylesheet" type="text/css" href="../../content/css/application_style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Ruda:wght@900&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Oswald&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat+Subrayada:wght@700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400&display=swap" rel="stylesheet">
+  <link rel="canonical" href="https://www.runroute.app/views/html/application.html">
+  <link rel="icon" href="../../content/images/favicon.svg" type="image/svg+xml">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Montserrat+Subrayada:wght@700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../../content/css/app.css">
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8S1DB5X3B7"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-8S1DB5X3B7');
+  </script>
+
+  <script src="../../scripts/app.js"></script>
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAYmrpoOWCzar68Hf6eb5i5FxKEjYotok&libraries=places&callback=initMap&v=quarterly"
+    async defer
+  ></script>
 </head>
-<body>
-<div class="sidebar">
 
-  <h1><a class="title_name" href="../../index.html">RunRoute</a></h1>
-  <div class="entryinterface">
-    <div class="entry" id="entry">
-      <input id="homeloc" class="location" type="text" placeholder="Find a location" />
+<body>
+
+<aside class="panel">
+  <header class="panel-brand">
+    <a class="wordmark" href="../../index.html"><img src="../../content/images/favicon.svg" alt="">RunRoute</a>
+    <a class="back-link" href="../../index.html">&larr; Home</a>
+  </header>
+
+  <div class="panel-controls">
+    <label class="field-label" for="homeloc">Start &amp; finish</label>
+    <div class="search-row">
+      <input id="homeloc" type="text" placeholder="Search your address" autocomplete="off">
+      <button id="geolocate" class="icon-btn" type="button" title="Use my location" aria-label="Use my location">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/></svg>
+      </button>
     </div>
 
-    <div class="entry">
-      <h1><a class="small_title_name" href="../../index.html">RunRoute</a></h1>
-      <div class="rangeslider">
-        <input type="range" min="1" max="1500" value="500" class="slider" id="sliderDistance" oninput="sliderFunction()">
+    <label class="field-label" for="radiusSlider">Search radius</label>
+    <div class="radius-row">
+      <input type="range" id="radiusSlider" min="100" max="3000" step="50" value="800" aria-label="Search radius in metres">
+      <div class="radius-value">
+        <input type="number" id="radiusInput" value="800" min="100" max="5000" step="50" aria-label="Search radius in metres"> m
       </div>
-      <p class="distanceUI">Parks within</p>
-      <input type="text" id="distanceEntry" value="500" class="distanceInput" id="distanceEntry" oninput="sliderEntryFunction()">
-      <p class="distanceUnits">m</p>
+    </div>
+
+    <span class="field-label">Show nearby</span>
+    <div class="chips" role="group" aria-label="Place categories">
+      <button type="button" class="chip" data-type="park" aria-pressed="true">Parks</button>
+      <button type="button" class="chip" data-type="tourist_attraction" aria-pressed="false">Sights</button>
+      <button type="button" class="chip" data-type="cafe" aria-pressed="false">Caf&eacute;s</button>
+      <button type="button" class="chip" data-type="gym" aria-pressed="false">Gyms</button>
     </div>
   </div>
 
-  <ul id="places">
+  <div class="list-head">
+    <span>Places to run past</span>
+    <span class="count" id="placeCount"></span>
+  </div>
+
+  <ul id="places" role="listbox" aria-multiselectable="true" aria-label="Nearby places">
+    <li class="hint">Search your address (or tap the locate button) to find places near you.<br><strong>Tap places to add them to your loop.</strong></li>
   </ul>
-</div>
+</aside>
 
-<div id="map">
-</div>
+<main id="mapwrap">
+  <div id="map" role="application" aria-label="Map"></div>
 
+  <div class="map-error" id="mapError" hidden>
+    <div class="card">
+      <h2>The map couldn't start</h2>
+      <p></p>
+      <a class="pill-btn" href="../../index.html" style="text-decoration:none">Back to home</a>
+    </div>
+  </div>
 
-<div id="infowindow-content">
-  <img alt="Icon of place on Google Maps" src="" width="16" height="16" id="place-icon" />
-  <span id="place-name" class="title"></span><br />
-  <span id="place-address"></span>
-</div>
+  <div class="statsbar" id="statsbar" hidden>
+    <div class="stat">
+      <span class="value" id="statDistance">&mdash;</span>
+      <span class="label">distance</span>
+    </div>
+    <div class="stat">
+      <span class="value" id="statMiles">&mdash;</span>
+      <span class="label">miles</span>
+    </div>
+    <div class="stat">
+      <span class="value" id="statTime">&mdash;</span>
+      <span class="label">est. time</span>
+    </div>
+    <select id="paceSelect" aria-label="Pace">
+      <option value="720">Walk &middot; 12:00 /km</option>
+      <option value="420">Easy jog &middot; 7:00 /km</option>
+      <option value="360" selected>Steady run &middot; 6:00 /km</option>
+      <option value="300">Tempo &middot; 5:00 /km</option>
+      <option value="270">Fast &middot; 4:30 /km</option>
+    </select>
+    <span class="divider" aria-hidden="true"></span>
+    <div class="actions">
+      <button class="pill-btn" id="gpxBtn" type="button" title="Download GPX file">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10"/><path d="m7.5 10 4.5 4.5L16.5 10"/><path d="M4.5 19.5h15"/></svg>
+        <span class="btn-text">GPX</span>
+      </button>
+      <button class="pill-btn secondary" id="shareBtn" type="button" title="Copy a shareable link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="5.5" r="2.6"/><circle cx="17.5" cy="18.5" r="2.6"/><path d="m8.4 10.7 6.8-4M8.4 13.3l6.8 4"/></svg>
+        <span class="btn-text">Share</span>
+      </button>
+      <button class="pill-btn quiet" id="clearBtn" type="button" title="Clear the route">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <span class="btn-text">Clear</span>
+      </button>
+    </div>
+  </div>
+</main>
 
-<script src="https://kit.fontawesome.com/21a0f11fac.js" crossorigin="anonymous"></script>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 </body>
 </html>
