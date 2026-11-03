@@ -275,6 +275,7 @@ li.place[aria-selected="true"] .place-check {
 .place-body { min-width: 0; flex: 1; }
 
 .place-name {
+  display: block;
   font-weight: 700;
   font-size: 14.5px;
   white-space: nowrap;
@@ -283,6 +284,7 @@ li.place[aria-selected="true"] .place-check {
 }
 
 .place-meta {
+  display: block;
   font-size: 12.5px;
   color: var(--ink-faint);
   white-space: nowrap;
