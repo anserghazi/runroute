@@ -2,18 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>RunRoute — Route Planner</title>
-  <meta name="description" content="Plan a running loop from your front door: pick nearby parks, sights and cafés, get a door-to-door route with distance, time, GPX export and a shareable link.">
+  <meta name="description" content="Plan a running loop from your front door: pick nearby parks, sights and cafés, get a door-to-door route with live run guidance, Street View preview, GPX export and shareable links.">
   <meta name="author" content="Anser Ghazi">
 
   <link rel="canonical" href="https://www.runroute.app/views/html/application.html">
   <link rel="icon" href="../../content/images/favicon.svg" type="image/svg+xml">
 
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f7f8fc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#12141f" media="(prefers-color-scheme: dark)">
+  <script>try{var t=localStorage.getItem('rr-theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
+
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/content/images/apple-touch-icon.png">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Montserrat+Subrayada:wght@700&display=swap" rel="stylesheet">
 
+  <link rel="stylesheet" href="../../content/css/theme.css">
   <link rel="stylesheet" href="../../content/css/app.css">
 
   <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -25,9 +34,15 @@
     gtag('config', 'G-8S1DB5X3B7');
   </script>
 
+  <script src="../../scripts/theme.js"></script>
   <script src="../../scripts/app.js"></script>
+  <script src="../../scripts/sheet.js"></script>
+  <script src="../../scripts/store.js"></script>
+  <script src="../../scripts/export.js"></script>
+  <script src="../../scripts/sim.js"></script>
+  <script src="../../scripts/run.js"></script>
   <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAYmrpoOWCzar68Hf6eb5i5FxKEjYotok&libraries=places&callback=initMap&v=quarterly"
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAYmrpoOWCzar68Hf6eb5i5FxKEjYotok&libraries=places,geometry&callback=initMap&v=quarterly"
     async defer
   ></script>
 </head>
@@ -35,45 +50,71 @@
 <body>
 
 <aside class="panel">
-  <header class="panel-brand">
-    <a class="wordmark" href="../../index.html"><img src="../../content/images/favicon.svg" alt="">RunRoute</a>
-    <a class="back-link" href="../../index.html">&larr; Home</a>
-  </header>
+  <div class="sheet-handle" id="sheetHandle" role="button" tabindex="0" aria-label="Expand or collapse the panel">
+    <span class="bar"></span>
+  </div>
+  <button class="sheet-peek-row" id="sheetSummary" type="button">Search your address to start</button>
 
-  <div class="panel-controls">
-    <label class="field-label" for="homeloc">Start &amp; finish</label>
-    <div class="search-row">
-      <input id="homeloc" type="text" placeholder="Search your address" autocomplete="off">
-      <button id="geolocate" class="icon-btn" type="button" title="Use my location" aria-label="Use my location">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/></svg>
-      </button>
-    </div>
+  <div class="panel-scroll">
+    <header class="panel-brand">
+      <a class="wordmark" href="../../index.html"><img src="../../content/images/favicon.svg" alt="">RunRoute</a>
+      <div class="brand-actions">
+        <button class="icon-btn theme-toggle" data-theme-toggle type="button" aria-label="Theme: Auto">
+          <svg class="tt-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17A8.5 8.5 0 0 0 12 3.5z" fill="currentColor" stroke="none"/></svg>
+          <svg class="tt-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+          <svg class="tt-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>
+        </button>
+        <a class="back-link" href="../../index.html">&larr; Home</a>
+      </div>
+    </header>
 
-    <label class="field-label" for="radiusSlider">Search radius</label>
-    <div class="radius-row">
-      <input type="range" id="radiusSlider" min="100" max="3000" step="50" value="800" aria-label="Search radius in metres">
-      <div class="radius-value">
-        <input type="number" id="radiusInput" value="800" min="100" max="5000" step="50" aria-label="Search radius in metres"> m
+    <div class="panel-controls">
+      <label class="field-label" for="homeloc">Start &amp; finish</label>
+      <div class="search-row">
+        <input id="homeloc" type="text" placeholder="Search your address" autocomplete="off">
+        <button id="geolocate" class="icon-btn" type="button" title="Use my location" aria-label="Use my location">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/></svg>
+        </button>
+      </div>
+      <p class="home-caption" id="homeCaption" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span id="homeCaptionText"></span>
+      </p>
+
+      <label class="field-label" for="radiusSlider">Search radius</label>
+      <div class="radius-row">
+        <input type="range" id="radiusSlider" min="100" max="3000" step="50" value="800" aria-label="Search radius in metres">
+        <div class="radius-value">
+          <input type="number" id="radiusInput" value="800" min="100" max="5000" step="50" aria-label="Search radius in metres"> m
+        </div>
+      </div>
+
+      <span class="field-label">Show nearby</span>
+      <div class="chips" role="group" aria-label="Place categories">
+        <button type="button" class="chip" data-type="park" aria-pressed="true">Parks</button>
+        <button type="button" class="chip" data-type="tourist_attraction" aria-pressed="false">Sights</button>
+        <button type="button" class="chip" data-type="cafe" aria-pressed="false">Caf&eacute;s</button>
+        <button type="button" class="chip" data-type="gym" aria-pressed="false">Gyms</button>
       </div>
     </div>
 
-    <span class="field-label">Show nearby</span>
-    <div class="chips" role="group" aria-label="Place categories">
-      <button type="button" class="chip" data-type="park" aria-pressed="true">Parks</button>
-      <button type="button" class="chip" data-type="tourist_attraction" aria-pressed="false">Sights</button>
-      <button type="button" class="chip" data-type="cafe" aria-pressed="false">Caf&eacute;s</button>
-      <button type="button" class="chip" data-type="gym" aria-pressed="false">Gyms</button>
+    <section class="saved" id="savedSection">
+      <button class="saved-head" id="savedToggle" type="button" aria-expanded="false" aria-controls="savedList">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg>
+        Saved routes <span class="count" id="savedCount"></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <ul id="savedList" hidden></ul>
+    </section>
+
+    <div class="list-head">
+      <span>Places to run past</span>
+      <span class="count" id="placeCount"></span>
     </div>
-  </div>
 
-  <div class="list-head">
-    <span>Places to run past</span>
-    <span class="count" id="placeCount"></span>
+    <ul id="places" role="listbox" aria-multiselectable="true" aria-label="Nearby places">
+      <li class="hint">Search your address (or tap the locate button) to find places near you.<br><strong>Tap places to add them to your loop.</strong></li>
+    </ul>
   </div>
-
-  <ul id="places" role="listbox" aria-multiselectable="true" aria-label="Nearby places">
-    <li class="hint">Search your address (or tap the locate button) to find places near you.<br><strong>Tap places to add them to your loop.</strong></li>
-  </ul>
 </aside>
 
 <main id="mapwrap">
@@ -83,47 +124,170 @@
     <div class="card">
       <h2>The map couldn't start</h2>
       <p></p>
-      <a class="pill-btn" href="../../index.html" style="text-decoration:none">Back to home</a>
+      <a class="pill-btn" href="../../index.html">Back to home</a>
     </div>
   </div>
 
   <div class="statsbar" id="statsbar" hidden>
-    <div class="stat">
-      <span class="value" id="statDistance">&mdash;</span>
-      <span class="label">distance</span>
+    <div class="stats-cluster">
+      <div class="stat"><span class="value" id="statDistance">&mdash;</span><span class="label">distance</span></div>
+      <div class="stat"><span class="value" id="statMiles">&mdash;</span><span class="label">miles</span></div>
+      <div class="stat"><span class="value" id="statTime">&mdash;</span><span class="label">est. time</span></div>
+      <select id="paceSelect" aria-label="Pace">
+        <option value="720">Walk &middot; 12:00 /km</option>
+        <option value="420">Easy jog &middot; 7:00 /km</option>
+        <option value="360" selected>Steady run &middot; 6:00 /km</option>
+        <option value="300">Tempo &middot; 5:00 /km</option>
+        <option value="270">Fast &middot; 4:30 /km</option>
+      </select>
     </div>
-    <div class="stat">
-      <span class="value" id="statMiles">&mdash;</span>
-      <span class="label">miles</span>
-    </div>
-    <div class="stat">
-      <span class="value" id="statTime">&mdash;</span>
-      <span class="label">est. time</span>
-    </div>
-    <select id="paceSelect" aria-label="Pace">
-      <option value="720">Walk &middot; 12:00 /km</option>
-      <option value="420">Easy jog &middot; 7:00 /km</option>
-      <option value="360" selected>Steady run &middot; 6:00 /km</option>
-      <option value="300">Tempo &middot; 5:00 /km</option>
-      <option value="270">Fast &middot; 4:30 /km</option>
-    </select>
-    <span class="divider" aria-hidden="true"></span>
-    <div class="actions">
-      <button class="pill-btn" id="gpxBtn" type="button" title="Download GPX file">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10"/><path d="m7.5 10 4.5 4.5L16.5 10"/><path d="M4.5 19.5h15"/></svg>
-        <span class="btn-text">GPX</span>
+    <div class="actions" role="group" aria-label="Route actions">
+      <button class="pill-btn" id="startRunBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>
+        <span class="btn-text">Start Run</span>
       </button>
-      <button class="pill-btn secondary" id="shareBtn" type="button" title="Copy a shareable link">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="5.5" r="2.6"/><circle cx="17.5" cy="18.5" r="2.6"/><path d="m8.4 10.7 6.8-4M8.4 13.3l6.8 4"/></svg>
-        <span class="btn-text">Share</span>
+      <button class="pill-btn secondary" id="previewBtn" type="button" title="Preview the route in Street View" aria-label="Preview the route in Street View">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span class="btn-text">Preview</span>
       </button>
-      <button class="pill-btn quiet" id="clearBtn" type="button" title="Clear the route">
+      <button class="pill-btn secondary" id="saveRouteBtn" type="button" title="Save this route on this device" aria-label="Save this route on this device">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg>
+        <span class="btn-text">Save</span>
+      </button>
+      <button class="pill-btn quiet" id="moreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="moreMenu" aria-label="More actions">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      </button>
+    </div>
+    <div class="menu-pop" id="moreMenu" role="menu" hidden>
+      <button role="menuitem" id="gpxBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10"/><path d="m7.5 10 4.5 4.5L16.5 10"/><path d="M4.5 19.5h15"/></svg>
+        Download GPX
+      </button>
+      <button role="menuitem" id="shareBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="5.5" r="2.6"/><circle cx="17.5" cy="18.5" r="2.6"/><path d="m8.4 10.7 6.8-4M8.4 13.3l6.8 4"/></svg>
+        Copy share link
+      </button>
+      <button role="menuitem" id="dirDocBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8V3.5h10V8"/><rect x="4" y="8" width="16" height="8" rx="1.5"/><path d="M7 16v4.5h10V16"/></svg>
+        Directions (print / PDF)
+      </button>
+      <div class="menu-sep" role="separator"></div>
+      <button role="menuitem" id="clearBtn" type="button" class="danger">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
-        <span class="btn-text">Clear</span>
+        Clear route
       </button>
     </div>
   </div>
 </main>
+
+<!-- Street View run preview -->
+<div class="sv-overlay" id="svOverlay" hidden>
+  <div id="svPano"></div>
+  <div class="sv-topbar">
+    <span class="sv-title">Run preview</span>
+    <span class="sv-pos" id="svPos"></span>
+    <button class="sv-close" id="svClose" type="button" aria-label="Exit preview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="sv-gap" id="svGap" hidden></div>
+  <div class="sv-controls">
+    <button class="sv-btn" id="svPrev" type="button" aria-label="Skip back">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 5.5v13l-9-6.5zM7.5 5.5h-2v13h2z"/></svg>
+    </button>
+    <button class="sv-btn primary" id="svPlay" type="button" aria-label="Play">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>
+    </button>
+    <button class="sv-btn" id="svNext" type="button" aria-label="Skip ahead">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5.5v13l9-6.5zM16.5 5.5h2v13h-2z"/></svg>
+    </button>
+    <input type="range" id="svScrub" min="0" value="0" step="1" aria-label="Position along route">
+    <button class="sv-btn" id="svSpeed" type="button" aria-label="Playback speed: 1x">1&times;</button>
+  </div>
+</div>
+
+<!-- Live run guidance -->
+<div class="run-ui" id="runUI" hidden>
+  <div class="run-card" role="status" aria-live="polite">
+    <div class="run-arrow" id="runArrow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5"/><path d="m5.5 11.5 6.5-6.5 6.5 6.5"/></svg>
+    </div>
+    <div class="run-cue">
+      <span class="run-dist" id="runDist">&mdash;</span>
+      <span class="run-instr" id="runInstr"></span>
+    </div>
+    <span class="run-next" id="runNext"></span>
+  </div>
+  <div class="run-banner warn" id="runOffroute" hidden></div>
+  <div class="run-banner info" id="runGps" hidden></div>
+  <div class="run-banner info" id="runWake" hidden></div>
+  <button class="pill-btn secondary run-recenter" id="runRecenter" type="button" hidden>Re-center</button>
+  <div class="run-stats">
+    <div class="rs"><span class="v" id="runRemain">&mdash;</span><span class="l">left</span></div>
+    <div class="rs"><span class="v" id="runElapsed">0:00</span><span class="l">elapsed</span></div>
+    <div class="rs"><span class="v" id="runToGo">&mdash;</span><span class="l">to finish</span></div>
+    <button class="icon-btn" id="runVoiceBtn" type="button" aria-pressed="true" aria-label="Voice cues on">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6.5 9H3v6h3.5L11 19z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+    </button>
+    <button class="pill-btn danger-solid" id="runEndBtn" type="button">End</button>
+  </div>
+</div>
+
+<!-- Pre-run dialog -->
+<dialog id="runPrecheck">
+  <h2>Ready to run?</h2>
+  <div id="preBody">
+    <p class="dlg-summary" id="preSummary"></p>
+    <div class="voice-toggle-row">
+      <span>Voice cues</span>
+      <button class="icon-btn" id="preVoice" type="button" aria-pressed="true" aria-label="Voice cues on">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6.5 9H3v6h3.5L11 19z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+      </button>
+    </div>
+    <ul class="dlg-bullets">
+      <li>Uses your location only while guiding &mdash; nothing is uploaded.</li>
+      <li>Works with the screen on. If the phone locks, guidance pauses and resumes on unlock.</li>
+    </ul>
+    <div class="dlg-actions">
+      <button class="pill-btn quiet" id="preCancel" type="button">Cancel</button>
+      <button class="pill-btn primary-big" id="preStart" type="button">Start</button>
+    </div>
+  </div>
+  <div id="preDenied" hidden>
+    <p>Location access is blocked. Enable it for runroute.app in your browser settings, then try again.</p>
+    <div class="dlg-actions">
+      <button class="pill-btn quiet" id="preClose" type="button">Close</button>
+      <button class="pill-btn secondary" id="preToSim" type="button">Preview instead</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Run summary dialog -->
+<dialog id="runSummary">
+  <h2>Run complete</h2>
+  <div class="summary-rows">
+    <div class="row"><span class="k">Distance covered</span><span class="v" id="sumDist">&mdash;</span></div>
+    <div class="row"><span class="k">Time</span><span class="v" id="sumTime">&mdash;</span></div>
+    <div class="row"><span class="k">Avg pace</span><span class="v" id="sumPace">&mdash;</span></div>
+    <div class="row"><span class="k">Stops reached</span><span class="v" id="sumStops">&mdash;</span></div>
+  </div>
+  <div class="dlg-actions">
+    <button class="pill-btn secondary" id="sumSave" type="button">Save route</button>
+    <button class="pill-btn" id="sumDone" type="button">Done</button>
+  </div>
+</dialog>
+
+<!-- Save route dialog -->
+<dialog id="saveDialog">
+  <h2>Save route</h2>
+  <label for="saveName">Route name</label>
+  <input type="text" id="saveName" maxlength="60" autocomplete="off">
+  <p class="dlg-privacy">Saved routes &mdash; including your start address &mdash; stay on this device only.</p>
+  <div class="dlg-actions">
+    <button class="pill-btn quiet" id="saveCancel" type="button">Cancel</button>
+    <button class="pill-btn" id="saveConfirm" type="button">Save</button>
+  </div>
+</dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

@@ -1,0 +1,15 @@
+{
+  "name": "RunRoute",
+  "short_name": "RunRoute",
+  "id": "/",
+  "start_url": "/views/html/application.html?utm_source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f8fc",
+  "theme_color": "#171c2e",
+  "icons": [
+    { "src": "/content/images/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/content/images/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/content/images/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

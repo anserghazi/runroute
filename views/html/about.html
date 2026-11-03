@@ -10,11 +10,21 @@
   <link rel="canonical" href="https://www.runroute.app/views/html/about.html">
   <link rel="icon" href="../../content/images/favicon.svg" type="image/svg+xml">
 
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f7f8fc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#12141f" media="(prefers-color-scheme: dark)">
+  <script>try{var t=localStorage.getItem('rr-theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
+
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/content/images/apple-touch-icon.png">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Montserrat+Subrayada:wght@700&display=swap" rel="stylesheet">
 
+  <link rel="stylesheet" href="../../content/css/theme.css">
   <link rel="stylesheet" href="../../content/css/site.css">
+  <script src="../../scripts/theme.js"></script>
 
   <!-- Global site tag (gtag.js) - Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-8S1DB5X3B7"></script>
@@ -35,6 +45,11 @@
       <a href="about.html" aria-current="page">About</a>
       <a href="contact.html">Contact</a>
       <a class="btn" href="application.html">Open the app</a>
+      <button class="theme-toggle" data-theme-toggle type="button" aria-label="Theme: Auto">
+        <svg class="tt-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17A8.5 8.5 0 0 0 12 3.5z" fill="currentColor" stroke="none"/></svg>
+        <svg class="tt-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+        <svg class="tt-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>
+      </button>
     </nav>
   </div>
 </header>

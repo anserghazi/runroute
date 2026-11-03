@@ -1,7 +1,9 @@
 /* ============================================================
-   RunRoute — application logic
-   Loop-route planner: pick a start, pick nearby places,
-   get a door-to-door running route.
+   RunRoute — application core
+   Search, categories, route calculation, stats, GPX, share.
+   Feature modules (sheet.js, store.js, export.js, sim.js, run.js)
+   build on the globals defined here: RR, RRTheme, $, toast(),
+   CAT, calculateRoute(), setHome(), runSearch(), updateStats().
    ============================================================ */
 
 "use strict";
@@ -13,20 +15,61 @@ var RR = {
   directionsService: null,
   directionsRenderer: null,
   searchBox: null,
-  home: null,            // { location: LatLng, address: string }
+  home: null,            // { location: LatLng, address, lat, lng }
   homeMarker: null,
   results: new Map(),    // place_id -> place (current search results)
-  markers: new Map(),    // place_id -> Marker (current search results)
-  selected: new Map(),   // place_id -> { id, name, location }
+  markers: new Map(),    // place_id -> Marker
+  selected: new Map(),   // place_id -> { id, name, location, cat }
   hasRoute: false,
+  routeMeters: 0,
   paceSecPerKm: 360,
   searchToken: 0,
   restoring: false,
-  mapsLoaded: false
+  mapsLoaded: false,
+  loadedRouteId: null,   // id of the saved route currently loaded (store.js)
+  waypointNames: [],     // stop names in route-request order (export.js)
+  run: {}                // run.js scratch space
 };
 
 var MAX_WAYPOINTS = 10;
 var DEFAULT_CENTER = { lat: 43.6532, lng: -79.3852 }; // Toronto
+
+/* Canonical category mapping — JS and CSS must agree (see app.css). */
+var CAT = {
+  park: { key: "park", color: "#0d7f52", label: "Parks" },
+  tourist_attraction: { key: "sight", color: "#dd6394", label: "Sights" },
+  cafe: { key: "cafe", color: "#c98500", label: "Cafés" },
+  gym: { key: "gym", color: "#0b9fd6", label: "Gyms" }
+};
+
+var CAT_COLOR = { park: "#0d7f52", sight: "#dd6394", cafe: "#c98500", gym: "#0b9fd6" };
+
+/* Map styles (legacy raster styles array — never add a mapId). */
+var MAP_STYLE_BASE = [
+  { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", elementType: "labels.icon", stylers: [{ visibility: "off" }] }
+];
+
+var MAP_STYLE_NIGHT = [
+  { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#263c3f" }] },
+  { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#6b9a76" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b3" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#746855" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2835" }] },
+  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#f3d19c" }] },
+  { featureType: "transit", elementType: "geometry", stylers: [{ color: "#2f3948" }] },
+  { featureType: "transit.station", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#515c6d" }] },
+  { featureType: "water", elementType: "labels.text.stroke", stylers: [{ color: "#17263c" }] }
+].concat(MAP_STYLE_BASE);
 
 /* ---------------- Small helpers ---------------- */
 
@@ -34,6 +77,7 @@ function $(id) { return document.getElementById(id); }
 
 function toast(msg, ms) {
   var el = $("toast");
+  if (!el) return;
   el.textContent = msg;
   el.classList.add("show");
   clearTimeout(toast._t);
@@ -70,10 +114,31 @@ function fmtDuration(totalSec) {
   return "~" + h + " h " + (r < 10 ? "0" : "") + r + " min";
 }
 
+function fmtClock(totalSec) {
+  totalSec = Math.max(0, Math.round(totalSec));
+  var m = Math.floor(totalSec / 60), s = totalSec % 60;
+  var h = Math.floor(m / 60);
+  if (h) { m = m % 60; return h + ":" + (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s; }
+  return m + ":" + (s < 10 ? "0" : "") + s;
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, function (c) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
   });
+}
+
+function isMobile() {
+  return window.matchMedia && window.matchMedia("(max-width: 860px)").matches;
+}
+
+function catFromTypes(types) {
+  if (!types) return null;
+  var order = ["park", "tourist_attraction", "cafe", "gym"];
+  for (var i = 0; i < order.length; i++) {
+    if (types.indexOf(order[i]) !== -1) return CAT[order[i]].key;
+  }
+  return null;
 }
 
 /* ---------------- Boot ---------------- */
@@ -87,7 +152,6 @@ window.initMap = function () {
   }
 };
 
-// Friendly message if the API key / billing is rejected at runtime.
 window.gm_authFailure = function () {
   showMapError(
     "The map couldn't start",
@@ -95,7 +159,6 @@ window.gm_authFailure = function () {
   );
 };
 
-// Watchdog: script blocked / failed to load entirely.
 window.addEventListener("load", function () {
   setTimeout(function () {
     if (!RR.mapsLoaded) {
@@ -115,6 +178,25 @@ function showMapError(title, body) {
   box.hidden = false;
 }
 
+function applyMapTheme(theme) {
+  if (!RR.map) return;
+  RR.map.setOptions({ styles: theme === "dark" ? MAP_STYLE_NIGHT : MAP_STYLE_BASE });
+  RR.directionsRenderer.setOptions({
+    polylineOptions: {
+      strokeColor: theme === "dark" ? "#8e99ff" : "#4353f0",
+      strokeWeight: 5,
+      strokeOpacity: 0.85
+    }
+  });
+  if (RR.hasRoute) {
+    var dir = RR.directionsRenderer.getDirections();
+    if (dir) RR.directionsRenderer.setDirections(dir);
+  }
+  if (window.RRRun && RR.run && RR.run.active && typeof window.RRRun.retheme === "function") {
+    window.RRRun.retheme(theme);
+  }
+}
+
 function boot() {
   RR.map = new google.maps.Map($("map"), {
     center: DEFAULT_CENTER,
@@ -122,12 +204,8 @@ function boot() {
     mapTypeControl: true,
     mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT },
     streetViewControl: false,
-    fullscreenControl: true,
-    clickableIcons: false,
-    styles: [
-      { featureType: "poi.business", stylers: [{ visibility: "off" }] },
-      { featureType: "transit", elementType: "labels.icon", stylers: [{ visibility: "off" }] }
-    ]
+    fullscreenControl: !isMobile(),
+    clickableIcons: false
   });
 
   RR.geocoder = new google.maps.Geocoder();
@@ -135,10 +213,13 @@ function boot() {
   RR.directionsService = new google.maps.DirectionsService();
   RR.directionsRenderer = new google.maps.DirectionsRenderer({
     draggable: true,
-    polylineOptions: { strokeColor: "#4353f0", strokeWeight: 5, strokeOpacity: 0.85 }
+    preserveViewport: true
   });
 
   RR.directionsRenderer.addListener("directions_changed", updateStats);
+
+  applyMapTheme(window.RRTheme ? RRTheme.effective() : "light");
+  if (window.RRTheme) RRTheme.onChange(applyMapTheme);
 
   // --- Search box ---
   var input = $("homeloc");
@@ -153,6 +234,11 @@ function boot() {
     var p = places[0];
     input.value = p.formatted_address || p.name;
     setHome(p.geometry.location, input.value);
+  });
+
+  input.addEventListener("focus", function () {
+    input.select();
+    if (window.RRSheet) RRSheet.raiseForInput();
   });
 
   // --- Geolocation ---
@@ -174,8 +260,7 @@ function boot() {
   });
 
   // --- Category chips ---
-  var chips = document.querySelectorAll(".chip");
-  chips.forEach(function (chip) {
+  document.querySelectorAll(".chip").forEach(function (chip) {
     chip.addEventListener("click", function () {
       var on = chip.getAttribute("aria-pressed") === "true";
       chip.setAttribute("aria-pressed", on ? "false" : "true");
@@ -183,7 +268,7 @@ function boot() {
     });
   });
 
-  // --- Stats bar ---
+  // --- Pace ---
   var paceSel = $("paceSelect");
   try {
     var saved = localStorage.getItem("runroute_pace");
@@ -197,16 +282,90 @@ function boot() {
     updateStats();
   });
 
+  // --- Actions ---
   $("gpxBtn").addEventListener("click", downloadGPX);
   $("shareBtn").addEventListener("click", copyShareLink);
-  $("clearBtn").addEventListener("click", clearSelections);
+  $("clearBtn").addEventListener("click", function () { clearSelections(false); });
 
+  $("startRunBtn").addEventListener("click", function () {
+    if (window.RRRun) RRRun.open();
+  });
+  $("previewBtn").addEventListener("click", function () {
+    if (window.RRSim) RRSim.open();
+  });
+  $("saveRouteBtn").addEventListener("click", function () {
+    if (window.RRStore) RRStore.openSaveDialog();
+  });
+  $("dirDocBtn").addEventListener("click", function () {
+    if (window.RRExport) RRExport.open();
+  });
+
+  bindMenu();
+
+  if (window.RRStore) RRStore.init();
+  if (window.RRSheet) RRSheet.onMapReady(RR.map);
+
+  updatePeekSummary();
   restoreFromHash();
+}
+
+/* ---------------- Overflow menu ---------------- */
+
+function bindMenu() {
+  var btn = $("moreBtn");
+  var menu = $("moreMenu");
+  if (!btn || !menu) return;
+
+  function close(refocus) {
+    if (menu.hidden) return;
+    menu.hidden = true;
+    btn.setAttribute("aria-expanded", "false");
+    if (refocus) btn.focus();
+  }
+
+  function openMenu() {
+    menu.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+    var first = menu.querySelector("button");
+    if (first) first.focus();
+  }
+
+  btn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (menu.hidden) openMenu(); else close(false);
+  });
+
+  menu.addEventListener("click", function (e) {
+    if (e.target.closest("button")) close(false);
+  });
+
+  menu.addEventListener("keydown", function (e) {
+    var items = Array.prototype.slice.call(menu.querySelectorAll("button"));
+    var idx = items.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      items[(idx + 1) % items.length].focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      items[(idx - 1 + items.length) % items.length].focus();
+    } else if (e.key === "Escape") {
+      close(true);
+    }
+  });
+
+  document.addEventListener("click", function (e) {
+    if (!menu.hidden && !menu.contains(e.target) && e.target !== btn) close(false);
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !menu.hidden && !menu.contains(document.activeElement)) close(false);
+  });
 }
 
 /* ---------------- Home / geolocation ---------------- */
 
-function setHome(latLng, address) {
+function setHome(latLng, address, opts) {
+  opts = opts || {};
   RR.home = {
     location: latLng,
     address: address,
@@ -229,10 +388,21 @@ function setHome(latLng, address) {
   }
   RR.homeMarker.setMap(RR.hasRoute ? null : RR.map);
 
-  if (!RR.restoring) {
+  var input = $("homeloc");
+  input.title = address || "";
+  input.scrollLeft = 0;
+  var cap = $("homeCaption");
+  if (cap) {
+    $("homeCaptionText").textContent = address || "";
+    cap.hidden = !address;
+  }
+
+  if (!RR.restoring && !opts.preserve) {
+    RR.loadedRouteId = null;
     clearSelections(true);
     runSearch();
   }
+  updatePeekSummary();
 }
 
 function useMyLocation() {
@@ -284,9 +454,9 @@ function nearbyByType(type, radius, location) {
       { location: location, radius: radius, type: type },
       function (results, status) {
         if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-          resolve(results);
+          resolve({ type: type, results: results });
         } else {
-          resolve([]); // ZERO_RESULTS and errors both resolve empty; errors reported by caller heuristic
+          resolve({ type: type, results: [] });
         }
       }
     );
@@ -305,6 +475,7 @@ function runSearch() {
     clearResultMarkers();
     list.innerHTML = '<li class="hint">Pick at least one category above to find places near you.</li>';
     $("placeCount").textContent = "";
+    updatePeekSummary();
     return;
   }
 
@@ -316,9 +487,10 @@ function runSearch() {
     if (token !== RR.searchToken) return; // stale search
 
     RR.results.clear();
-    lists.forEach(function (arr) {
-      arr.forEach(function (place) {
+    lists.forEach(function (group) {
+      group.results.forEach(function (place) {
         if (place.place_id && place.geometry && place.geometry.location && !RR.results.has(place.place_id)) {
+          place.rrCat = CAT[group.type] ? CAT[group.type].key : null; // first category wins
           RR.results.set(place.place_id, place);
         }
       });
@@ -352,6 +524,7 @@ function renderResults() {
   if (!items.length) {
     list.innerHTML = '<li class="hint">No places found within ' + currentRadius() +
       " m.<br><strong>Try a bigger radius or more categories.</strong></li>";
+    updatePeekSummary();
     return;
   }
 
@@ -365,20 +538,21 @@ function renderResults() {
     li.setAttribute("tabindex", "0");
     li.setAttribute("aria-selected", RR.selected.has(id) ? "true" : "false");
     li.dataset.placeId = id;
-
-    var meta = [];
-    if (place.rating) meta.push("★ " + place.rating.toFixed(1));
-    if (place.vicinity) meta.push(place.vicinity);
+    if (place.rrCat) li.dataset.cat = place.rrCat;
+    li.title = place.name + (place.vicinity ? " — " + place.vicinity : "");
 
     li.innerHTML =
       '<span class="place-check" aria-hidden="true">' +
         '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m2.5 8.5 3.5 3.5 7.5-8"/></svg>' +
       "</span>" +
       '<span class="place-body">' +
-        '<span class="place-name">' + escapeHtml(place.name) + "</span>" +
-        '<span class="place-meta">' + escapeHtml(meta.join(" · ")) + "</span>" +
+        '<span class="place-name"><span class="cat-dot" aria-hidden="true"></span>' + escapeHtml(place.name) + "</span>" +
+        (place.vicinity ? '<span class="place-meta">' + escapeHtml(place.vicinity) + "</span>" : "") +
       "</span>" +
-      '<span class="place-dist">' + fmtShortDist(item.dist) + "</span>";
+      '<span class="place-side">' +
+        '<span class="place-dist">' + fmtShortDist(item.dist) + "</span>" +
+        (place.rating ? '<span class="place-rating">★ ' + place.rating.toFixed(1) + "</span>" : "") +
+      "</span>";
 
     li.addEventListener("click", function () { togglePlace(id); });
     li.addEventListener("keydown", function (e) {
@@ -392,18 +566,19 @@ function renderResults() {
     addResultMarker(place);
   });
   list.appendChild(frag);
+  updatePeekSummary();
 }
 
 /* ---------------- Result markers ---------------- */
 
-function markerIcon(selected) {
+function markerIcon(selected, catKey) {
   return {
     path: google.maps.SymbolPath.CIRCLE,
-    scale: 8,
-    fillColor: selected ? "#4353f0" : "#ffffff",
+    scale: selected ? 9 : 7.5,
+    fillColor: selected ? "#4353f0" : (CAT_COLOR[catKey] || "#ffffff"),
     fillOpacity: 1,
-    strokeColor: "#4353f0",
-    strokeWeight: 2.5
+    strokeColor: (selected || CAT_COLOR[catKey]) ? "#ffffff" : "#4353f0",
+    strokeWeight: 2
   };
 }
 
@@ -413,10 +588,11 @@ function addResultMarker(place) {
     position: place.geometry.location,
     map: RR.map,
     title: place.name,
-    icon: markerIcon(RR.selected.has(id)),
+    icon: markerIcon(RR.selected.has(id), place.rrCat),
     zIndex: RR.selected.has(id) ? 30 : 20
   });
   m.addListener("click", function () { togglePlace(id); });
+  m.rrCat = place.rrCat;
   RR.markers.set(id, m);
 }
 
@@ -440,7 +616,8 @@ function togglePlace(id) {
     RR.selected.set(id, {
       id: id,
       name: place.name,
-      location: place.geometry.location
+      location: place.geometry.location,
+      cat: place.rrCat || null
     });
   }
   syncSelectionUI(id);
@@ -449,6 +626,7 @@ function togglePlace(id) {
   } else {
     clearRouteDisplay();
   }
+  updatePeekSummary();
 }
 
 function syncSelectionUI(id) {
@@ -456,18 +634,21 @@ function syncSelectionUI(id) {
   if (li) li.setAttribute("aria-selected", RR.selected.has(id) ? "true" : "false");
   var m = RR.markers.get(id);
   if (m) {
-    m.setIcon(markerIcon(RR.selected.has(id)));
+    m.setIcon(markerIcon(RR.selected.has(id), m.rrCat));
     m.setZIndex(RR.selected.has(id) ? 30 : 20);
   }
 }
 
-function calculateRoute() {
+function calculateRoute(onDone) {
   if (!RR.home || !RR.selected.size) return;
 
   var waypts = [];
+  var names = [];
   RR.selected.forEach(function (s) {
     waypts.push({ location: s.location, stopover: true });
+    names.push(s.name);
   });
+  RR.waypointNames = names;
 
   RR.directionsService.route(
     {
@@ -479,14 +660,25 @@ function calculateRoute() {
     },
     function (response, status) {
       if (status === "OK") {
+        var hadRoute = RR.hasRoute;
         RR.hasRoute = true;
         if (RR.homeMarker) RR.homeMarker.setMap(null);
         RR.directionsRenderer.setMap(RR.map);
         RR.directionsRenderer.setDirections(response); // fires directions_changed -> updateStats
+        var bounds = response.routes[0].bounds;
+        if (isMobile()) {
+          RR.map.fitBounds(bounds, { top: 80, left: 24, right: 24, bottom: 230 });
+          if (!hadRoute && window.RRSheet) RRSheet.setState("peek");
+        } else {
+          RR.map.fitBounds(bounds, 48);
+        }
+        if (typeof onDone === "function") onDone(true);
       } else if (status === "ZERO_RESULTS" || status === "NOT_FOUND") {
         toast("Couldn't route through that stop — try a different one.");
+        if (typeof onDone === "function") onDone(false);
       } else {
         toast("Route request failed (" + status + "). Please try again.");
+        if (typeof onDone === "function") onDone(false);
       }
     }
   );
@@ -494,21 +686,22 @@ function calculateRoute() {
 
 function clearRouteDisplay() {
   RR.hasRoute = false;
+  RR.routeMeters = 0;
   RR.directionsRenderer.setMap(null);
   if (RR.homeMarker && RR.home) RR.homeMarker.setMap(RR.map);
   $("statsbar").hidden = true;
+  updatePeekSummary();
 }
 
 function clearSelections(silent) {
   var had = RR.selected.size;
-  RR.selected.forEach(function (_, id) {
-    RR.selected.delete(id);
-    syncSelectionUI(id);
-  });
+  var ids = Array.from(RR.selected.keys());
   RR.selected.clear();
+  ids.forEach(function (id) { syncSelectionUI(id); });
   document.querySelectorAll('li.place[aria-selected="true"]').forEach(function (li) {
     li.setAttribute("aria-selected", "false");
   });
+  RR.loadedRouteId = null;
   clearRouteDisplay();
   if (!silent && had) toast("Route cleared.");
 }
@@ -524,12 +717,32 @@ function updateStats() {
   dir.routes[0].legs.forEach(function (leg) {
     if (leg.distance) meters += leg.distance.value;
   });
+  RR.routeMeters = meters;
 
   var km = meters / 1000;
   $("statDistance").textContent = km.toFixed(2) + " km";
   $("statMiles").textContent = (km * 0.621371).toFixed(2) + " mi";
   $("statTime").textContent = fmtDuration(km * RR.paceSecPerKm);
   $("statsbar").hidden = false;
+  updatePeekSummary();
+}
+
+/* ---------------- Sheet peek summary ---------------- */
+
+function updatePeekSummary() {
+  var el = $("sheetSummary");
+  if (!el) return;
+  var text;
+  if (RR.hasRoute && RR.routeMeters) {
+    text = (RR.routeMeters / 1000).toFixed(1) + " km loop · " + RR.selected.size +
+      (RR.selected.size === 1 ? " stop" : " stops");
+  } else if (RR.home && RR.results.size) {
+    text = RR.results.size + " places · " + RR.selected.size +
+      (RR.selected.size === 1 ? " stop picked" : " stops picked");
+  } else {
+    text = "Search your address to start";
+  }
+  el.textContent = text;
 }
 
 /* ---------------- GPX export ---------------- */
@@ -602,7 +815,6 @@ function restoreFromHash() {
 
   RR.restoring = true;
 
-  // Radius + categories first, so the search uses them.
   var r = parseInt(params.get("r"), 10);
   if (!isNaN(r)) {
     $("radiusInput").value = r;
@@ -626,12 +838,17 @@ function restoreFromHash() {
   var pending = ids.length;
   ids.forEach(function (id) {
     RR.placesService.getDetails(
-      { placeId: id, fields: ["place_id", "name", "geometry"] },
+      { placeId: id, fields: ["place_id", "name", "geometry", "types"] },
       function (place, status) {
         pending--;
         if (status === google.maps.places.PlacesServiceStatus.OK &&
             place && place.geometry && place.geometry.location) {
-          RR.selected.set(id, { id: id, name: place.name, location: place.geometry.location });
+          RR.selected.set(id, {
+            id: id,
+            name: place.name,
+            location: place.geometry.location,
+            cat: catFromTypes(place.types)
+          });
           syncSelectionUI(id);
         }
         if (pending === 0) {

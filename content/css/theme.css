@@ -1,0 +1,197 @@
+/* ============================================================
+   RunRoute — design tokens (light + dark)
+   Load FIRST on every page, before site.css / app.css.
+   Dark tokens appear TWICE (media-guarded auto + manual attr).
+   EDIT BOTH DARK BLOCKS TOGETHER.
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  --bg: #f7f8fc;
+  --card: #ffffff;
+  --card-raised: #ffffff;
+  --ink: #171c2e;
+  --ink-soft: #4b5168;
+  --ink-faint: #8a90a6;
+
+  --brand: #4353f0;
+  --brand-dark: #3341d4;
+  --brand-hi: #4353f0;
+  --brand-tint: #eceeff;
+  --brand-tint-hover: #dde1ff;
+  --brand-tint-ink: #3341d4;
+
+  --green: #12b76a;
+  --green-tint: #e4f8ee;
+  --green-ink: #0b5e3d;
+  --green-line: #c9eeda;
+
+  --line: #e4e7f2;
+  --field-bg: #f7f8fc;
+  --field-bg-focus: #ffffff;
+  --map-bg: #e8eaf2;
+
+  --shadow: 0 1px 2px rgba(23, 28, 46, 0.06), 0 10px 32px rgba(23, 28, 46, 0.14);
+  --scrim: rgba(23, 28, 46, 0.45);
+
+  --header-bg: rgba(247, 248, 252, 0.88);
+  --band-bg: #171c2e;
+  --band-muted: #aab0c5;
+  --band-hover: #262c44;
+  --band-line: #2a3047;
+
+  --danger: #d92d20;
+  --warn-bg: #fef0c7;
+  --warn-ink: #93370d;
+  --warn-line: #fedf89;
+
+  /* Category coding (fills are theme-invariant) */
+  --cat-park: #0d7f52;
+  --cat-park-bg: #e4f1ec;
+  --cat-park-ink: #084f33;
+  --cat-sight: #dd6394;
+  --cat-sight-bg: #fbeef3;
+  --cat-sight-ink: #893d5c;
+  --cat-cafe: #c98500;
+  --cat-cafe-bg: #f9f2e3;
+  --cat-cafe-ink: #7d5200;
+  --cat-gym: #0b9fd6;
+  --cat-gym-bg: #e4f4fa;
+  --cat-gym-ink: #076385;
+
+  --radius: 16px;
+  --font: "Raleway", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mark: "Montserrat Subrayada", var(--font);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg: #12141f;
+    --card: #1b2030;
+    --card-raised: #212741;
+    --ink: #e8eaf2;
+    --ink-soft: #aab0c5;
+    --ink-faint: #8a92b2;
+
+    --brand: #4353f0;
+    --brand-dark: #5b6cff;
+    --brand-hi: #8e99ff;
+    --brand-tint: #272e4e;
+    --brand-tint-hover: #303a63;
+    --brand-tint-ink: #b3bcff;
+
+    --green: #30c884;
+    --green-tint: #16352a;
+    --green-ink: #86e0b7;
+    --green-line: #1e4a3a;
+
+    --line: #2a3047;
+    --field-bg: #141927;
+    --field-bg-focus: #1f2538;
+    --map-bg: #242f3e;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 36px rgba(0, 0, 0, 0.6);
+    --scrim: rgba(0, 0, 0, 0.62);
+
+    --header-bg: rgba(18, 20, 31, 0.86);
+    --band-bg: #0d1120;
+    --band-muted: #9aa1ba;
+    --band-hover: #1a2136;
+    --band-line: #232a40;
+
+    --danger: #f97066;
+    --warn-bg: #3a2d14;
+    --warn-ink: #fec84b;
+    --warn-line: #5a4418;
+
+    --cat-park-bg: #19383e;
+    --cat-park-ink: #8bc2ac;
+    --cat-sight-bg: #47324c;
+    --cat-sight-ink: #efb4cc;
+    --cat-cafe-bg: #43392c;
+    --cat-cafe-ink: #e5c485;
+    --cat-gym-bg: #193f5b;
+    --cat-gym-ink: #8ad1eb;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #12141f;
+  --card: #1b2030;
+  --card-raised: #212741;
+  --ink: #e8eaf2;
+  --ink-soft: #aab0c5;
+  --ink-faint: #8a92b2;
+
+  --brand: #4353f0;
+  --brand-dark: #5b6cff;
+  --brand-hi: #8e99ff;
+  --brand-tint: #272e4e;
+  --brand-tint-hover: #303a63;
+  --brand-tint-ink: #b3bcff;
+
+  --green: #30c884;
+  --green-tint: #16352a;
+  --green-ink: #86e0b7;
+  --green-line: #1e4a3a;
+
+  --line: #2a3047;
+  --field-bg: #141927;
+  --field-bg-focus: #1f2538;
+  --map-bg: #242f3e;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 36px rgba(0, 0, 0, 0.6);
+  --scrim: rgba(0, 0, 0, 0.62);
+
+  --header-bg: rgba(18, 20, 31, 0.86);
+  --band-bg: #0d1120;
+  --band-muted: #9aa1ba;
+  --band-hover: #1a2136;
+  --band-line: #232a40;
+
+  --danger: #f97066;
+  --warn-bg: #3a2d14;
+  --warn-ink: #fec84b;
+  --warn-line: #5a4418;
+
+  --cat-park-bg: #19383e;
+  --cat-park-ink: #8bc2ac;
+  --cat-sight-bg: #47324c;
+  --cat-sight-ink: #efb4cc;
+  --cat-cafe-bg: #43392c;
+  --cat-cafe-ink: #e5c485;
+  --cat-gym-bg: #193f5b;
+  --cat-gym-ink: #8ad1eb;
+}
+
+/* Global rules that belong with the tokens */
+
+:focus-visible {
+  outline: 2px solid var(--brand-hi);
+  outline-offset: 2px;
+}
+
+input, select, textarea {
+  font-size: max(16px, 1rem); /* prevents iOS focus auto-zoom */
+}
+
+/* Theme toggle (one component, every page) */
+
+.theme-toggle {
+  position: relative;
+}
+
+.theme-toggle svg {
+  width: 20px;
+  height: 20px;
+  display: none;
+}
+
+html:not([data-theme]) .theme-toggle .tt-auto { display: block; }
+html[data-theme="light"] .theme-toggle .tt-light { display: block; }
+html[data-theme="dark"] .theme-toggle .tt-dark { display: block; }

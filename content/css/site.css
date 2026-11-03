@@ -1,25 +1,7 @@
 /* ============================================================
-   RunRoute — site stylesheet (landing / about / contact)
+   RunRoute — site stylesheet (landing / about / contact / 404)
+   Requires theme.css (tokens) loaded first.
    ============================================================ */
-
-:root {
-  --ink: #171c2e;
-  --ink-soft: #4b5168;
-  --ink-faint: #8a90a6;
-  --brand: #4353f0;
-  --brand-dark: #3341d4;
-  --brand-tint: #eceeff;
-  --green: #12b76a;
-  --green-tint: #e4f8ee;
-  --bg: #f7f8fc;
-  --card: #ffffff;
-  --line: #e4e7f2;
-  --navy: #171c2e;
-  --radius: 16px;
-  --shadow: 0 1px 2px rgba(23, 28, 46, 0.05), 0 8px 28px rgba(23, 28, 46, 0.08);
-  --font: "Raleway", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mark: "Montserrat Subrayada", var(--font);
-}
 
 * { box-sizing: border-box; }
 
@@ -37,7 +19,7 @@ body {
 
 img { max-width: 100%; height: auto; }
 
-a { color: var(--brand); }
+a { color: var(--brand-hi); }
 
 h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 
@@ -52,7 +34,7 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(247, 248, 252, 0.88);
+  background: var(--header-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
@@ -95,9 +77,25 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
   transition: background 0.15s, color 0.15s;
 }
 
-.site-nav a:hover { background: var(--brand-tint); color: var(--brand-dark); }
+.site-nav a:hover { background: var(--brand-tint); color: var(--brand-tint-ink); }
 
-.site-nav a[aria-current="page"] { color: var(--brand-dark); }
+.site-nav a[aria-current="page"] { color: var(--brand-hi); }
+
+.site-nav .theme-toggle {
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: none;
+  color: var(--ink-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.site-nav .theme-toggle:hover { border-color: var(--brand-hi); color: var(--brand-hi); }
 
 /* ---------------- Buttons ---------------- */
 
@@ -124,7 +122,7 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 
 .btn-ghost {
   display: inline-block;
-  color: var(--brand-dark);
+  color: var(--brand-hi);
   font-weight: 700;
   text-decoration: none;
   padding: 16px 20px;
@@ -138,8 +136,8 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 
 .status-strip {
   background: var(--green-tint);
-  border-bottom: 1px solid #c9eeda;
-  color: #0b5e3d;
+  border-bottom: 1px solid var(--green-line);
+  color: var(--green-ink);
   font-size: 15px;
   font-weight: 600;
 }
@@ -182,7 +180,7 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 
 .hero h1 em {
   font-style: normal;
-  color: var(--brand);
+  color: var(--brand-hi);
 }
 
 .hero-sub {
@@ -227,7 +225,7 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 
 /* ---------------- How it works ---------------- */
 
-.how { background: #fff; border-block: 1px solid var(--line); }
+.how { background: var(--card); border-block: 1px solid var(--line); }
 
 .steps {
   list-style: none;
@@ -265,11 +263,12 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 .steps h3 { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
 .steps p { margin: 0; color: var(--ink-soft); font-size: 15.5px; }
 
+/* screenshots stay on a light framed card in both themes — do not tokenize, do not filter */
 .demo-card {
   margin: 0 auto;
   max-width: 760px;
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: #ffffff;
+  border: 1px solid #e4e7f2;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
@@ -279,15 +278,15 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
   display: flex;
   gap: 6px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg);
+  border-bottom: 1px solid #e4e7f2;
+  background: #f7f8fc;
 }
 
 .demo-card .demo-chrome span {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--line);
+  background: #e4e7f2;
 }
 
 .demo-card img { display: block; width: 100%; }
@@ -295,8 +294,9 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 .demo-card figcaption {
   padding: 12px 18px;
   font-size: 14px;
-  color: var(--ink-faint);
+  color: #8a90a6;
   text-align: center;
+  background: #ffffff;
 }
 
 /* ---------------- Features ---------------- */
@@ -323,7 +323,7 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
   height: 44px;
   border-radius: 12px;
   background: var(--brand-tint);
-  color: var(--brand);
+  color: var(--brand-hi);
   margin-bottom: 16px;
 }
 
@@ -337,7 +337,7 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
   top: 20px;
   right: 20px;
   background: var(--green-tint);
-  color: #0b5e3d;
+  color: var(--green-ink);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.6px;
@@ -349,7 +349,7 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 /* ---------------- CTA band ---------------- */
 
 .cta-band {
-  background: var(--navy);
+  background: var(--band-bg);
   color: #fff;
   text-align: center;
   padding: 72px 0;
@@ -361,7 +361,7 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 }
 
 .cta-band p {
-  color: #aab0c5;
+  color: var(--band-muted);
   font-size: 18px;
   margin: 0 0 28px;
 }
@@ -394,20 +394,21 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 
 .split img { display: block; width: 100%; }
 
+/* screenshots stay on a light framed card in both themes — do not tokenize, do not filter */
 .framed {
-  border: 1px solid var(--line);
+  border: 1px solid #e4e7f2;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
-  background: #fff;
+  background: #ffffff;
 }
 
 .note-card {
   background: var(--green-tint);
-  border: 1px solid #c9eeda;
+  border: 1px solid var(--green-line);
   border-radius: var(--radius);
   padding: 20px 24px;
-  color: #0b5e3d;
+  color: var(--green-ink);
   font-size: 15.5px;
   margin: 8px 0 24px;
 }
@@ -447,25 +448,25 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 }
 
 .contact-list a:hover {
-  border-color: var(--brand);
+  border-color: var(--brand-hi);
   transform: translateY(-1px);
   box-shadow: var(--shadow);
 }
 
-.contact-list svg { width: 22px; height: 22px; color: var(--brand); flex: none; }
+.contact-list svg { width: 22px; height: 22px; color: var(--brand-hi); flex: none; }
 
 .contact-list .handle { margin-left: auto; color: var(--ink-faint); font-weight: 500; font-size: 15px; }
 
 /* ---------------- Footer ---------------- */
 
 .site-footer {
-  background: var(--navy);
-  color: #aab0c5;
+  background: var(--band-bg);
+  color: var(--band-muted);
   padding: 40px 0 32px;
   font-size: 15px;
 }
 
-.cta-band + .site-footer { border-top: 1px solid #2a3047; }
+.cta-band + .site-footer { border-top: 1px solid var(--band-line); }
 
 .site-footer .container {
   display: flex;
@@ -479,7 +480,7 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
 
 .footer-nav { display: flex; gap: 18px; }
 
-.footer-nav a { color: #aab0c5; text-decoration: none; font-weight: 600; }
+.footer-nav a { color: var(--band-muted); text-decoration: none; font-weight: 600; }
 .footer-nav a:hover { color: #fff; }
 
 .social {
@@ -494,11 +495,11 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; }
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  color: #aab0c5;
+  color: var(--band-muted);
   transition: background 0.15s, color 0.15s;
 }
 
-.social a:hover { background: #262c44; color: #fff; }
+.social a:hover { background: var(--band-hover); color: #fff; }
 
 .social svg { width: 20px; height: 20px; }
 
