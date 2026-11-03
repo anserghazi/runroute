@@ -9,7 +9,7 @@
 
 (function () {
   var KEY = "rr-theme";
-  var LIGHT_META = "#f7f8fc";
+  var LIGHT_META = "#feffeb";
   var DARK_META = "#12141f";
   var listeners = [];
   var media = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
@@ -49,12 +49,21 @@
     return media && media.matches ? "dark" : "light";
   }
 
+  // A page's own authored light/dark theme-color (marketing pages use the navy header color).
+  function authoredMeta(mode) {
+    for (var i = 0; i < metas.length; i++) {
+      var m = metas[i].el.getAttribute("media") || "";
+      if (m.indexOf(mode) !== -1 && metas[i].original) return metas[i].original;
+    }
+    return mode === "dark" ? DARK_META : LIGHT_META;
+  }
+
   function syncMetas() {
     if (!metas.length) collectMetas();
     var s = manual();
     for (var i = 0; i < metas.length; i++) {
       if (s) {
-        metas[i].el.setAttribute("content", s === "dark" ? DARK_META : LIGHT_META);
+        metas[i].el.setAttribute("content", authoredMeta(s));
       } else if (metas[i].original != null) {
         metas[i].el.setAttribute("content", metas[i].original);
       }

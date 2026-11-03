@@ -8,12 +8,14 @@
 :root {
   color-scheme: light;
 
-  --bg: #f7f8fc;
+  /* Light theme = the classic RunRoute tan: cream paper, navy chrome. */
+  --bg: #feffeb;
+  --panel: #feffeb;
   --card: #ffffff;
   --card-raised: #ffffff;
-  --ink: #171c2e;
-  --ink-soft: #4b5168;
-  --ink-faint: #8a90a6;
+  --ink: #222632;
+  --ink-soft: #4d5166;
+  --ink-faint: #767a8c;
 
   --brand: #4353f0;
   --brand-dark: #3341d4;
@@ -27,19 +29,36 @@
   --green-ink: #0b5e3d;
   --green-line: #c9eeda;
 
-  --line: #e4e7f2;
-  --field-bg: #f7f8fc;
+  --line: #e6e3c8;
+  --field-bg: #ffffff;
   --field-bg-focus: #ffffff;
-  --map-bg: #e8eaf2;
+  --map-bg: #efeedd;
 
-  --shadow: 0 1px 2px rgba(23, 28, 46, 0.06), 0 10px 32px rgba(23, 28, 46, 0.14);
-  --scrim: rgba(23, 28, 46, 0.45);
+  --shadow: 0 1px 2px rgba(60, 52, 20, 0.07), 0 10px 32px rgba(60, 52, 20, 0.13);
+  --scrim: rgba(34, 38, 50, 0.45);
 
-  --header-bg: rgba(247, 248, 252, 0.88);
-  --band-bg: #171c2e;
-  --band-muted: #aab0c5;
-  --band-hover: #262c44;
-  --band-line: #2a3047;
+  /* Classic solid navy header bar */
+  --header-bg: #222632;
+  --header-ink: #ffffff;
+  --header-link: #e6e8f0;
+  --header-hover: rgba(255, 255, 255, 0.1);
+  --header-line: #222632;
+
+  /* Classic deep-indigo footer */
+  --band-bg: #131638;
+  --band-muted: #b0b4d0;
+  --band-hover: #232a52;
+  --band-line: #262b55;
+
+  /* Classic location tiles: gray-tan at rest, white on hover, light blue when picked */
+  --tile-bg: #f4f3e3;
+  --tile-hover: #ffffff;
+  --tile-line: #e2dfc4;
+  --tile-ink: #222632;
+  --tile-pill: #ffffff;
+  --tile-sel-bg: #cce6ff;
+  --tile-sel-line: #222632;
+  --tile-sel-ink: #222632;
 
   --danger: #d92d20;
   --danger-fill: #d92d20; /* solid fill under white text; --danger is for red text/icons */
@@ -71,6 +90,7 @@
     color-scheme: dark;
 
     --bg: #12141f;
+    --panel: #1b2030;
     --card: #1b2030;
     --card-raised: #212741;
     --ink: #e8eaf2;
@@ -97,11 +117,25 @@
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 36px rgba(0, 0, 0, 0.6);
     --scrim: rgba(0, 0, 0, 0.62);
 
-    --header-bg: rgba(18, 20, 31, 0.86);
+    --header-bg: rgba(18, 20, 31, 0.92);
+    --header-ink: #e8eaf2;
+    --header-link: #aab0c5;
+    --header-hover: rgba(255, 255, 255, 0.06);
+    --header-line: #2a3047;
+
     --band-bg: #0d1120;
     --band-muted: #9aa1ba;
     --band-hover: #1a2136;
     --band-line: #232a40;
+
+    --tile-bg: #20263a;
+    --tile-hover: #272e46;
+    --tile-line: #2a3047;
+    --tile-ink: #e8eaf2;
+    --tile-pill: #141927;
+    --tile-sel-bg: #233657;
+    --tile-sel-line: #8ec5ff;
+    --tile-sel-ink: #e8eaf2;
 
     --danger: #f97066;
     --danger-fill: #b42318;
@@ -124,6 +158,7 @@
   color-scheme: dark;
 
   --bg: #12141f;
+  --panel: #1b2030;
   --card: #1b2030;
   --card-raised: #212741;
   --ink: #e8eaf2;
@@ -150,11 +185,25 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 36px rgba(0, 0, 0, 0.6);
   --scrim: rgba(0, 0, 0, 0.62);
 
-  --header-bg: rgba(18, 20, 31, 0.86);
+  --header-bg: rgba(18, 20, 31, 0.92);
+  --header-ink: #e8eaf2;
+  --header-link: #aab0c5;
+  --header-hover: rgba(255, 255, 255, 0.06);
+  --header-line: #2a3047;
+
   --band-bg: #0d1120;
   --band-muted: #9aa1ba;
   --band-hover: #1a2136;
   --band-line: #232a40;
+
+  --tile-bg: #20263a;
+  --tile-hover: #272e46;
+  --tile-line: #2a3047;
+  --tile-ink: #e8eaf2;
+  --tile-pill: #141927;
+  --tile-sel-bg: #233657;
+  --tile-sel-line: #8ec5ff;
+  --tile-sel-ink: #e8eaf2;
 
   --danger: #f97066;
   --danger-fill: #b42318;

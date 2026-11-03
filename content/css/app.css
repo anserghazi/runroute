@@ -47,7 +47,7 @@ button { font-family: var(--font); cursor: pointer; }
   flex: none;
   display: flex;
   flex-direction: column;
-  background: var(--card);
+  background: var(--panel);
   border-right: 1px solid var(--line);
   z-index: 15;
 }
@@ -324,9 +324,12 @@ button { font-family: var(--font); cursor: pointer; }
 }
 
 @media (min-width: 861px) {
-  /* #places is the only shrinkable sibling on desktop; an uncapped list squeezes it to 0 */
+  /* #places keeps room for ~3 tiles; when the panel can't fit that, the whole
+     panel scrolls instead of squeezing the place list to nothing. */
+  .panel-scroll { overflow-y: auto; }
+  #places { min-height: 200px; }
   #savedList {
-    max-height: 40vh;
+    max-height: 30vh;
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -345,7 +348,7 @@ button { font-family: var(--font); cursor: pointer; }
   border-radius: 12px;
 }
 
-.saved-row:hover { background: var(--bg); }
+.saved-row:hover { background: var(--tile-bg); }
 
 .saved-main {
   flex: 1;
@@ -423,31 +426,39 @@ button { font-family: var(--font); cursor: pointer; }
 #places {
   list-style: none;
   margin: 0;
-  padding: 0 10px 14px;
+  padding: 0 0 14px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
 }
 
+/* Classic location tiles (the original "Waypoint List"): full-width stacked
+   buttons — tan-gray at rest, white on hover, light blue in a navy frame when
+   picked. The frame is an inset shadow so selecting never shifts the layout. */
 #places li.place {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 11px 12px;
-  min-height: 48px;
-  margin: 2px 0;
-  border-radius: 12px;
-  border: 1.5px solid transparent;
+  gap: 12px;
+  padding: 15px 18px;
+  min-height: 64px;
+  background: var(--tile-bg);
+  color: var(--tile-ink);
+  border-bottom: 1px solid var(--tile-line);
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background 0.12s, box-shadow 0.12s;
 }
 
-#places li.place:hover { background: var(--bg); }
+#places li.place:first-child { border-top: 1px solid var(--tile-line); }
+
+#places li.place:hover { background: var(--tile-hover); }
 
 #places li.place[aria-selected="true"] {
-  background: var(--brand-tint);
-  border-color: var(--brand-hi);
+  background: var(--tile-sel-bg);
+  color: var(--tile-sel-ink);
+  box-shadow: inset 0 0 0 2px var(--tile-sel-line);
 }
+
+#places li.place:focus-visible { outline-offset: -4px; }
 
 li.place[data-cat="park"] { --cat: var(--cat-park); }
 li.place[data-cat="sight"] { --cat: var(--cat-sight); }
@@ -457,35 +468,17 @@ li.place[data-cat="gym"] { --cat: var(--cat-gym); }
 .cat-dot {
   display: inline-block;
   flex: none;
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--cat, transparent);
-  margin-right: 7px;
+  margin-right: 8px;
   vertical-align: 2px;
 }
 
-.place-check {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  margin-top: 2px;
-  border-radius: 7px;
-  border: 1.5px solid var(--line);
-  background: var(--card);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: transparent;
-}
-
-li.place[aria-selected="true"] .place-check {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
-}
-
-.place-check svg { width: 13px; height: 13px; }
+/* Classic tiles show selection by the tile itself (fill + frame + the ✓ badge),
+   so the checkbox from the modern row isn't drawn. */
+.place-check { display: none; }
 
 .place-body { min-width: 0; flex: 1; }
 
@@ -495,9 +488,11 @@ li.place[aria-selected="true"] .place-check {
   -webkit-line-clamp: 2;
   overflow: hidden;
   white-space: normal;
-  font-weight: 700;
-  font-size: 14.5px;
-  line-height: 1.35;
+  font-weight: 600;
+  font-size: 16.5px;
+  line-height: 1.3;
+  padding-left: 17px; /* hanging indent: wrapped lines align past the category dot */
+  text-indent: -17px;
 }
 
 .place-meta {
@@ -506,10 +501,11 @@ li.place[aria-selected="true"] .place-check {
   -webkit-line-clamp: 2;
   overflow: hidden;
   white-space: normal;
-  font-size: 12.5px;
-  color: var(--ink-faint);
+  font-size: 13px;
+  color: var(--ink-soft);
   line-height: 1.45;
-  margin-top: 3px;
+  margin-top: 4px;
+  padding-left: 17px; /* aligns under the name, past the category dot */
 }
 
 .place-side {
@@ -517,24 +513,33 @@ li.place[aria-selected="true"] .place-check {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 5px;
+  padding-top: 1px;
 }
 
 .place-dist {
   font-size: 12.5px;
   font-weight: 700;
   color: var(--ink-soft);
-  background: var(--bg);
+  background: var(--tile-pill);
+  border: 1px solid var(--tile-line);
   border-radius: 999px;
-  padding: 3px 9px;
+  padding: 2px 9px;
+  white-space: nowrap;
 }
 
-li.place[aria-selected="true"] .place-dist { background: var(--card); }
+li.place[aria-selected="true"] .place-dist {
+  background: var(--tile-sel-line);
+  border-color: var(--tile-sel-line);
+  color: var(--tile-sel-bg);
+}
+
+li.place[aria-selected="true"] .place-dist::before { content: "\2713\00a0"; }
 
 .place-rating {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--ink-faint);
+  color: var(--ink-soft);
 }
 
 #places .hint, #placesHint {
@@ -1268,6 +1273,12 @@ dialog label { display: block; font-size: 13px; font-weight: 700; color: var(--i
   .statsbar { padding: 10px 8px; }
   .stats-cluster { column-gap: 10px; }
   .statsbar .actions { gap: 6px; }
+}
+
+@media (max-width: 360px) {
+  .run-stats { gap: 8px; }
+  .run-stats .rs { min-width: 46px; }
+  .run-stats .v { font-size: 15px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
