@@ -769,7 +769,11 @@ li.place[aria-selected="true"] .place-dist::before { content: "\2713\00a0"; }
 
 .sv-overlay[hidden] { display: none; }
 
-#svPano { position: absolute; inset: 0; }
+/* Google's pano builds its own positioned canvas layers; isolate it and lift
+   the overlay chrome above it, or the canvas swallows every tap. */
+#svPano { position: absolute; inset: 0; z-index: 0; isolation: isolate; }
+
+.sv-topbar, .sv-gap, .sv-controls { z-index: 2; }
 
 .sv-topbar {
   position: absolute;
