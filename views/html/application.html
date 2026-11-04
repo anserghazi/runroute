@@ -22,8 +22,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Montserrat+Subrayada:wght@700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="../../content/css/theme.css">
-  <link rel="stylesheet" href="../../content/css/app.css">
+  <!-- ?v= is the release tag: bump it on every release so a cached old file never pairs with new markup -->
+  <link rel="stylesheet" href="../../content/css/theme.css?v=sv2">
+  <link rel="stylesheet" href="../../content/css/app.css?v=sv2">
+  <link rel="stylesheet" href="../../content/css/sim.css?v=sv2">
 
   <!-- Global site tag (gtag.js) - Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-8S1DB5X3B7"></script>
@@ -34,13 +36,14 @@
     gtag('config', 'G-8S1DB5X3B7');
   </script>
 
-  <script src="../../scripts/theme.js"></script>
-  <script src="../../scripts/app.js"></script>
-  <script src="../../scripts/sheet.js"></script>
-  <script src="../../scripts/store.js"></script>
-  <script src="../../scripts/export.js"></script>
-  <script src="../../scripts/sim.js"></script>
-  <script src="../../scripts/run.js"></script>
+  <script src="../../scripts/theme.js?v=sv2"></script>
+  <script src="../../scripts/app.js?v=sv2"></script>
+  <script src="../../scripts/sheet.js?v=sv2"></script>
+  <script src="../../scripts/store.js?v=sv2"></script>
+  <script src="../../scripts/export.js?v=sv2"></script>
+  <script src="../../scripts/streetwalk.js?v=sv2"></script>
+  <script src="../../scripts/sim.js?v=sv2"></script>
+  <script src="../../scripts/run.js?v=sv2"></script>
   <script
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAYmrpoOWCzar68Hf6eb5i5FxKEjYotok&libraries=places,geometry&callback=initMap&v=quarterly"
     async defer
@@ -180,9 +183,8 @@
   </div>
 </main>
 
-<!-- Street View run preview -->
-<div class="sv-overlay" id="svOverlay" hidden>
-  <div id="svPano"></div>
+<!-- Street View run preview (sim.js + sim.css) -->
+<div class="sv-overlay" id="svOverlay" hidden aria-label="Street View run preview">
   <div class="sv-topbar">
     <span class="sv-title">Run preview</span>
     <span class="sv-pos" id="svPos"></span>
@@ -190,20 +192,42 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
   </div>
-  <div class="sv-gap" id="svGap" hidden></div>
+  <div class="sv-stage" id="svStage">
+    <div id="svPano"></div>
+    <div class="sv-dim" id="svDim" hidden aria-hidden="true"><span id="svDimText"></span></div>
+    <div class="sv-chevron" id="svChevron" hidden aria-hidden="true">
+      <svg viewBox="-10 -10 120 120"><path class="o" id="svChevBodyO" d=""/><path class="o h" id="svChevHeadO" d=""/><path class="f" id="svChevBody" d=""/><path class="f h" id="svChevHead" d=""/></svg>
+    </div>
+    <div class="sv-hudcol" id="svHudCol">
+      <div class="sv-turn" id="svTurn" hidden>
+        <span class="sv-turn-arrow" id="svTurnArrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5"/><path d="m5.5 11.5 6.5-6.5 6.5 6.5"/></svg></span>
+        <span class="sv-turn-dist" id="svTurnDist"></span>
+        <span class="sv-turn-instr" id="svTurnInstr"></span>
+        <span class="sv-turn-then" id="svTurnThen" hidden></span>
+      </div>
+      <div class="sv-gap" id="svGap" hidden></div>
+      <div class="sv-stopcard" id="svStopCard" hidden><span class="sv-stop-dot" id="svStopDot"></span><span id="svStopText"></span></div>
+    </div>
+    <div class="sv-card" id="svCard" hidden>
+      <p class="sv-card-text"><span id="svCardText"></span><span class="sv-card-sub" id="svCardSub" hidden></span></p>
+      <div class="sv-card-actions">
+        <button class="pill-btn secondary" id="svCardAlt" type="button">Replay</button>
+        <button class="pill-btn" id="svCardMain" type="button">Close</button>
+      </div>
+    </div>
+  </div>
   <div class="sv-controls">
-    <button class="sv-btn" id="svPrev" type="button" aria-label="Skip back">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 5.5v13l-9-6.5zM7.5 5.5h-2v13h2z"/></svg>
-    </button>
-    <button class="sv-btn primary" id="svPlay" type="button" aria-label="Play">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>
-    </button>
-    <button class="sv-btn" id="svNext" type="button" aria-label="Skip ahead">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5.5v13l9-6.5zM16.5 5.5h2v13h-2z"/></svg>
-    </button>
-    <input type="range" id="svScrub" min="0" value="0" step="1" aria-label="Position along route">
+    <button class="sv-btn" id="svPrev" type="button" aria-label="Previous turn or stop"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 5.5v13l-9-6.5zM7.5 5.5h-2v13h2z"/></svg></button>
+    <button class="sv-btn primary" id="svPlay" type="button" aria-label="Play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+    <button class="sv-btn" id="svNext" type="button" aria-label="Next turn or stop"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5.5v13l9-6.5zM16.5 5.5h2v13h-2z"/></svg></button>
+    <div class="sv-scrubwrap">
+      <div class="sv-ticks" id="svTicks" aria-hidden="true"></div>
+      <input type="range" id="svScrub" min="0" max="10" value="0" step="10" aria-label="Position along route">
+      <div class="sv-buf" id="svBuf" aria-hidden="true"></div>
+    </div>
     <button class="sv-btn" id="svSpeed" type="button" aria-label="Playback speed: 1x">1&times;</button>
   </div>
+  <div class="sv-live" id="svLive" aria-live="polite" aria-atomic="true"></div>
 </div>
 
 <!-- Live run guidance -->

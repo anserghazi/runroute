@@ -47,6 +47,10 @@ var CAT = {
 
 var CAT_COLOR = { park: "#0d7f52", sight: "#dd6394", cafe: "#c98500", gym: "#0b9fd6" };
 
+/* Darkened category fills that carry white text at >= 4.5:1 — mirrors the light-theme
+   --cat-*-fill tokens in theme.css. Used for the numbered stop badges on the map. */
+var CAT_FILL = { park: "#0d7f52", sight: "#b8326a", cafe: "#8a5a00", gym: "#06729b" };
+
 /* Map styles (legacy raster styles array — never add a mapId). */
 var MAP_STYLE_BASE = [
   { featureType: "poi.business", stylers: [{ visibility: "off" }] },
@@ -222,12 +226,28 @@ function boot() {
   RR.geocoder = new google.maps.Geocoder();
   RR.placesService = new google.maps.places.PlacesService(RR.map);
   RR.directionsService = new google.maps.DirectionsService();
+  // The renderer's own A/B/C pins sat on top of our stop markers and hid the line; stops
+  // are drawn as numbered badges (markerIcon) and RR.homeMarker is the start/finish. The
+  // pins are made invisible and inert through markerOptions rather than suppressMarkers:
+  // suppressMarkers also removes the white via-point handle a line drag leaves behind,
+  // and without it a dragged route can never be re-adjusted. clickable/draggable false
+  // keep the invisible pins from catching taps meant for the stop badges.
   RR.directionsRenderer = new google.maps.DirectionsRenderer({
     draggable: true,
-    preserveViewport: true
+    preserveViewport: true,
+    markerOptions: { opacity: 0, clickable: false, draggable: false, zIndex: 1 }
   });
 
   RR.directionsRenderer.addListener("directions_changed", updateStats);
+
+  // Marker size follows zoom and phone/desktop layout.
+  RR.map.addListener("zoom_changed", refreshMarkers);
+  trackAutoFit();
+  if (window.matchMedia) {
+    var mobileMql = window.matchMedia("(max-width: 860px)");
+    if (mobileMql.addEventListener) mobileMql.addEventListener("change", refreshMarkers);
+    else if (mobileMql.addListener) mobileMql.addListener(refreshMarkers);
+  }
 
   applyMapTheme(window.RRTheme ? RRTheme.effective() : "light");
   if (window.RRTheme) RRTheme.onChange(applyMapTheme);
@@ -322,6 +342,18 @@ function boot() {
 
   if (window.RRStore) RRStore.init();
   if (window.RRSheet) RRSheet.onMapReady(RR.map);
+  // Phone: while the camera is still the automatic route fit, refit whenever the sheet
+  // settles in a new state, so collapsing to peek shows the route larger in the freed-up
+  // map and raising to half again keeps it clear of the sheet. A pan or zoom by the user
+  // ends the automatic fit (see trackAutoFit), and a live run owns the camera.
+  if (window.RRSheet && RRSheet.onSettled) {
+    RRSheet.onSettled(function (state) {
+      if (state === "full" || !RR.hasRoute || !RR.autoFit) return;
+      if (RR.run && RR.run.active) return;
+      if (!isMobile()) return;
+      fitRouteBounds();
+    });
+  }
 
   updatePeekSummary();
   restoreFromHash();
@@ -405,7 +437,8 @@ function setHome(latLng, address, opts) {
   } else {
     RR.homeMarker.setPosition(latLng);
   }
-  RR.homeMarker.setMap(RR.hasRoute ? null : RR.map);
+  // Always shown: the renderer's own pins are invisible, so this pin is the start/finish.
+  RR.homeMarker.setMap(RR.map);
 
   var input = $("homeloc");
   input.title = address || "";
@@ -590,15 +623,154 @@ function renderResults() {
 
 /* ---------------- Result markers ---------------- */
 
-function markerIcon(selected, catKey) {
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    scale: selected ? 9 : 7.5,
-    fillColor: selected ? "#4353f0" : (CAT_COLOR[catKey] || "#ffffff"),
-    fillOpacity: 1,
-    strokeColor: (selected || CAT_COLOR[catKey]) ? "#ffffff" : "#4353f0",
-    strokeWeight: 2
+/* Marker look, by state (D = visible diameter in CSS px at zoom 15; scaled by zoom):
+     browsing, not picked ......... solid category dot, white ring (D 16 desktop / 13 phone)
+     route exists, not picked ..... small translucent dot so the line reads through (11 / 9)
+     picked stop .................. numbered visit-order badge on the darkened category
+                                    fill, white ring (24 / 20); un-numbered while routing
+   Icons are SVG data URLs drawn at 2x for sharp phones; on touch layouts a transparent
+   hit circle keeps small dots tappable (see hitD below). */
+var MARKER_ICON_CACHE = {};
+
+function markerZoomFactor() {
+  var z = (RR.map && RR.map.getZoom) ? RR.map.getZoom() : 15;
+  if (typeof z !== "number") z = 15;
+  if (z >= 17) return 1.15;
+  if (z >= 16) return 1.08;
+  if (z >= 15) return 1;
+  if (z >= 14) return 0.9;
+  return 0.8;
+}
+
+function markerIcon(selected, catKey, order) {
+  var mobile = isMobile();
+  var k = markerZoomFactor();
+  var d, fill, fillOpacity, ring, ringW, text = "";
+  if (selected) {
+    d = Math.max(18, Math.round((mobile ? 20 : 24) * Math.max(k, 0.9)));
+    fill = CAT_FILL[catKey] || "#4353f0";
+    fillOpacity = 1;
+    ring = "#ffffff";
+    ringW = 2;
+    if (order) text = String(order);
+  } else if (RR.hasRoute) {
+    d = Math.max(7, Math.round((mobile ? 9 : 11) * k));
+    fill = CAT_COLOR[catKey] || "#4353f0";
+    fillOpacity = 0.55;
+    ring = "#ffffff";
+    ringW = 1.5;
+  } else {
+    d = Math.max(10, Math.round((mobile ? 13 : 16) * k));
+    fill = CAT_COLOR[catKey] || "#ffffff";
+    fillOpacity = 1;
+    ring = CAT_COLOR[catKey] ? "#ffffff" : "#4353f0";
+    ringW = 2;
+  }
+  // Touch hit area: picked badges get >= 28 px and browse dots >= 24 px (WCAG 2.2 target
+  // size). The faint unpicked dots shown while a route exists are not tappable on touch
+  // layouts at all (markerClickable), so they get no padding.
+  var hitD = d + 4;
+  if (mobile) {
+    if (selected) hitD = Math.max(d + 4, 28);
+    else if (!RR.hasRoute) hitD = Math.max(d + 4, 24);
+  }
+  var box = Math.max(d + 4, hitD);
+  var key = [d, fill, fillOpacity, ring, ringW, text, box, hitD].join("|");
+  if (MARKER_ICON_CACHE[key]) return MARKER_ICON_CACHE[key];
+
+  var c = box / 2;
+  var r = d / 2 - ringW / 2;
+  var fs = text.length > 1 ? Math.round(d * 0.46) : Math.round(d * 0.55);
+  var svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="' + box * 2 + '" height="' + box * 2 +
+    '" viewBox="0 0 ' + box + " " + box + '">' +
+    '<circle cx="' + c + '" cy="' + c + '" r="' + r + '" fill="' + fill +
+    '" fill-opacity="' + fillOpacity + '" stroke="' + ring + '" stroke-width="' + ringW + '"/>' +
+    (text
+      ? '<text x="' + c + '" y="' + (c + fs * 0.36) + '" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="' +
+        fs + '" font-weight="700" fill="#ffffff">' + text + "</text>"
+      : (selected ? '<circle cx="' + c + '" cy="' + c + '" r="' + (d * 0.14) + '" fill="#ffffff"/>' : "")) +
+    "</svg>";
+
+  var icon = {
+    url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+    size: new google.maps.Size(box, box),
+    scaledSize: new google.maps.Size(box, box),
+    anchor: new google.maps.Point(c, c),
+    rrShape: { type: "circle", coords: [c, c, Math.max(d / 2, hitD / 2)] }
   };
+  MARKER_ICON_CACHE[key] = icon;
+  return icon;
+}
+
+// Visit-order number (1-based) per picked stop id, from the last routed snapshot.
+function stopOrderMap() {
+  var out = {};
+  if (!RR.hasRoute) return out;
+  (RR.visitStops || []).forEach(function (s, i) { if (s && s.id) out[s.id] = i + 1; });
+  return out;
+}
+
+/* Phone + route: the faint unpicked dots are display-only. The map around them is where a
+   tap collapses the sheet, and the browser's touch adjustment snaps a finger onto any
+   marker within ~20 px of it whatever its shape (measured: a tap 18-21 px off an 8 px dot
+   with a 2 px hit circle still selected it), so ~1 in 3 "collapse" taps added a stop.
+   Stops are added from the list, which stays open; browse dots, picked badges and every
+   desktop marker stay clickable. */
+function markerClickable(sel) {
+  if (window.RRSim && RRSim.isOpen && RRSim.isOpen()) return false;
+  if (RR.run && RR.run.active) return false; // run.js turns marker taps off for a live run
+  return sel || !RR.hasRoute || !isMobile();
+}
+
+function styleMarker(id, m, orders) {
+  var sel = RR.selected.has(id);
+  var order = sel ? (orders || stopOrderMap())[id] : 0;
+  var icon = markerIcon(sel, m.rrCat, order);
+  m.setIcon(icon);
+  m.setShape(icon.rrShape);
+  var clickable = markerClickable(sel);
+  if (m.getClickable() !== clickable) m.setClickable(clickable);
+  m.setZIndex(sel ? 30 : (RR.hasRoute ? 10 : 20));
+  if (m.rrName) m.setTitle(order ? "Stop " + order + ": " + m.rrName : m.rrName);
+}
+
+/* Start/finish: Google's default red pin while browsing (it marks the searched address);
+   once a loop exists, a compact navy flag badge — the tall pin sat on the first and last
+   legs and hid them, and with the renderer's pins invisible it is the only S/F mark. */
+function homeIcon() {
+  if (!RR.hasRoute) return null;
+  var mobile = isMobile();
+  var d = Math.max(18, Math.round((mobile ? 22 : 26) * Math.max(markerZoomFactor(), 0.9)));
+  var key = "home|" + d;
+  if (MARKER_ICON_CACHE[key]) return MARKER_ICON_CACHE[key];
+  var box = d + 4, c = box / 2, u = d / 22;
+  function p(x, y) { return (c + x * u).toFixed(2) + "," + (c + y * u).toFixed(2); }
+  var svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="' + box * 2 + '" height="' + box * 2 +
+    '" viewBox="0 0 ' + box + " " + box + '">' +
+    '<circle cx="' + c + '" cy="' + c + '" r="' + (d / 2 - 1.25) + '" fill="#222632" stroke="#ffffff" stroke-width="2.5"/>' +
+    '<path d="M' + p(-3.2, 5.5) + "L" + p(-3.2, -5.5) + '" stroke="#ffffff" stroke-width="' + (1.8 * u).toFixed(2) + '" stroke-linecap="round"/>' +
+    '<path d="M' + p(-3.2, -5.5) + "L" + p(5.2, -2.6) + "L" + p(-3.2, 0.3) + 'Z" fill="#ffffff"/>' +
+    "</svg>";
+  var icon = {
+    url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+    size: new google.maps.Size(box, box),
+    scaledSize: new google.maps.Size(box, box),
+    anchor: new google.maps.Point(c, c)
+  };
+  MARKER_ICON_CACHE[key] = icon;
+  return icon;
+}
+
+function refreshMarkers() {
+  if (RR.homeMarker) {
+    RR.homeMarker.setIcon(homeIcon());
+    RR.homeMarker.setZIndex(RR.hasRoute ? 25 : 50);
+  }
+  if (!RR.markers || !RR.markers.size) return;
+  var orders = stopOrderMap();
+  RR.markers.forEach(function (m, id) { styleMarker(id, m, orders); });
 }
 
 function addResultMarker(place) {
@@ -606,12 +778,12 @@ function addResultMarker(place) {
   var m = new google.maps.Marker({
     position: place.geometry.location,
     map: RR.map,
-    title: place.name,
-    icon: markerIcon(RR.selected.has(id), place.rrCat),
-    zIndex: RR.selected.has(id) ? 30 : 20
+    title: place.name
   });
   m.addListener("click", function () { togglePlace(id); });
   m.rrCat = place.rrCat;
+  m.rrName = place.name;
+  styleMarker(id, m);
   RR.markers.set(id, m);
 }
 
@@ -623,6 +795,7 @@ function clearResultMarkers() {
 /* ---------------- Selection & routing ---------------- */
 
 function togglePlace(id) {
+  if (window.RRSim && RRSim.isOpen && RRSim.isOpen()) { toast("Close the preview to change stops."); return; }
   if (RR.run && RR.run.active) { toast("End the run to change stops."); return; }
   if (RR.selected.has(id)) {
     RR.selected.delete(id);
@@ -654,10 +827,7 @@ function syncSelectionUI(id) {
   var li = document.querySelector('li.place[data-place-id="' + id + '"]');
   if (li) li.setAttribute("aria-selected", RR.selected.has(id) ? "true" : "false");
   var m = RR.markers.get(id);
-  if (m) {
-    m.setIcon(markerIcon(RR.selected.has(id), m.rrCat));
-    m.setZIndex(RR.selected.has(id) ? 30 : 20);
-  }
+  if (m) styleMarker(id, m);
 }
 
 function calculateRoute(onDone) {
@@ -697,18 +867,13 @@ function calculateRoute(onDone) {
         }
         RR.waypointNames = names;
         RR.visitStops = order.map(function (i) { return reqStops[i]; });
-        var hadRoute = RR.hasRoute;
         RR.hasRoute = true;
-        if (RR.homeMarker) RR.homeMarker.setMap(null);
         RR.directionsRenderer.setMap(RR.map);
         RR.directionsRenderer.setDirections(response); // fires directions_changed -> updateStats
-        var bounds = response.routes[0].bounds;
-        if (isMobile()) {
-          RR.map.fitBounds(bounds, { top: 80, left: 24, right: 24, bottom: 230 });
-          if (!hadRoute && window.RRSheet) RRSheet.setState("peek");
-        } else {
-          RR.map.fitBounds(bounds, 48);
-        }
+        refreshMarkers();
+        // Mobile: the sheet deliberately stays where it is (normally half) so the list
+        // remains open for more stops; the stats bar sits above the sheet either way.
+        fitRouteBounds(response.routes[0].bounds);
         if (typeof onDone === "function") onDone(true);
       } else if (status === "ZERO_RESULTS" || status === "NOT_FOUND") {
         toast("Couldn't route through that stop — try a different one.");
@@ -726,10 +891,79 @@ function clearRouteDisplay() {
   RR.hasRoute = false;
   RR.routeMeters = 0;
   RR.visitStops = [];
+  RR.autoFit = false;
   RR.directionsRenderer.setMap(null);
   if (RR.homeMarker && RR.home) RR.homeMarker.setMap(RR.map);
   $("statsbar").hidden = true;
+  refreshMarkers();
   updatePeekSummary();
+}
+
+/* Fit the route into the part of the map a person can actually see. On a phone that is
+   #mapwrap (which already ends at the sheet's top edge, peek or half) minus the map-type
+   control at its top and the stats bar floating at its bottom — measured, not assumed,
+   so it is right in whichever sheet state the route lands. With no bounds argument it
+   refits the current route (store.js calls this after collapsing the sheet). */
+/* RR.autoFit: true while the camera is the one fitRouteBounds() chose. Camera moves made
+   by fitRouteBounds itself are bracketed by RR.fittingRoute (until the map is idle, or
+   1.5 s if the fit changed nothing and no idle comes); any other zoom, or a drag, is the
+   user taking over the view, and the sheet stops refitting (app init, RRSheet.onSettled). */
+RR.autoFit = false;
+RR.fittingRoute = false;
+
+function trackAutoFit() {
+  RR.map.addListener("dragstart", function () { RR.autoFit = false; });
+  RR.map.addListener("zoom_changed", function () {
+    if (!RR.fittingRoute) RR.autoFit = false;
+  });
+}
+
+var routeFitSeq = 0;
+
+function routeFitBegin() {
+  RR.autoFit = true;
+  RR.fittingRoute = true;
+  var seq = ++routeFitSeq;
+  // Only the latest fit may close the bracket: an earlier fit's timer must not end it
+  // while a newer fit is still animating.
+  function end() { if (seq === routeFitSeq) RR.fittingRoute = false; }
+  google.maps.event.addListenerOnce(RR.map, "idle", end);
+  setTimeout(end, 1500);
+}
+
+function fitRouteBounds(bounds) {
+  if (!RR.map) return;
+  if (!bounds) {
+    var dir = RR.hasRoute ? RR.directionsRenderer.getDirections() : null;
+    bounds = dir && dir.routes && dir.routes[0] && dir.routes[0].bounds;
+  }
+  if (!bounds) return;
+  routeFitBegin();
+  if (!isMobile()) {
+    RR.map.fitBounds(bounds, 48);
+    return;
+  }
+  var wrap = $("mapwrap");
+  var wr = wrap ? wrap.getBoundingClientRect() : null;
+  if (!wr || wr.height < 80) {
+    RR.map.fitBounds(bounds, { top: 80, left: 24, right: 24, bottom: 160 });
+    return;
+  }
+  var top = 58; // the app page has no top bar on phones; clear the map-type control (TOP_RIGHT)
+  var bottom = 20;
+  var bar = $("statsbar");
+  if (bar && !bar.hidden) {
+    var br = bar.getBoundingClientRect();
+    if (br.height > 0 && br.top < wr.bottom) bottom = (wr.bottom - br.top) + 14;
+  }
+  // Leave at least ~120 px of map for the route; padding larger than the map makes
+  // fitBounds zoom out to the world.
+  var room = wr.height - top - bottom;
+  if (room < 120) {
+    var cut = 120 - room;
+    top = Math.max(8, top - cut);
+  }
+  RR.map.fitBounds(bounds, { top: Math.round(top), left: 28, right: 28, bottom: Math.round(bottom) });
 }
 
 function clearSelections(silent) {

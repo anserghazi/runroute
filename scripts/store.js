@@ -455,6 +455,9 @@
 
     if (RR.selected.size && typeof calculateRoute === "function") {
       calculateRoute(function (ok) {
+        // Loading a saved loop is "show me this route": collapse the sheet (unlike tapping
+        // places, which keeps the list open). The route was just auto-fitted, so app.js's
+        // RRSheet.onSettled hook refits it to the larger peek map once the sheet settles.
         if (ok && typeof isMobile === "function" && isMobile() && window.RRSheet) {
           RRSheet.setState("peek");
         }

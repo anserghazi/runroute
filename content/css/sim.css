@@ -1,0 +1,385 @@
+/* ============================================================
+   RunRoute — Street View run preview (sim.css, sv2)
+   Loads AFTER app.css: the original .sv-* rules stay there and are overridden here
+   (same selectors, later file). Requires theme.css tokens.
+   ATTRIBUTION LAW: nothing of ours may cover the bottom 40px of #svPano
+   (Google logo 66x26 at left 5px; Terms/Report row spans the full width at 390px).
+   ============================================================ */
+
+:root {
+  --sv-w: clamp(420px, 46vw, 860px);
+  --sv-ctl-h: 76px;
+  --sv-hud-bg: rgba(14, 16, 26, 0.82);
+  --sv-hud-ink: #ffffff;
+  --sv-hud-soft: rgba(255, 255, 255, 0.78);
+  --sv-now-bg: #4353f0;
+  --sv-chev-line: #4353f0;
+  --sv-accent: var(--brand);
+  --sv-buf: rgba(255, 255, 255, 0.35);
+  --sv-tick: rgba(255, 255, 255, 0.85);
+  --sv-rel: 0deg;
+  --sv-chev-scale: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --sv-accent: var(--brand-hi); }
+}
+
+:root[data-theme="dark"] { --sv-accent: var(--brand-hi); }
+
+/* ---------- Structure (all widths; mobile = full screen) ---------- */
+
+.sv-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  overflow: hidden;
+}
+
+.sv-overlay[hidden] { display: none; }
+
+.sv-topbar { z-index: 5; }
+
+.sv-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+#svPano { position: absolute; inset: 0; z-index: 0; isolation: isolate; }
+
+/* Cut mask + opening cover. bottom:40px keeps Google's logo and Terms row uncovered. */
+.sv-dim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 40px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 140ms linear;
+  pointer-events: none;
+}
+
+.sv-dim[hidden] { display: none; }
+.sv-dim.on { opacity: 0.85; }
+.sv-dim.cover { opacity: 1; }
+.sv-dim.leaving { transition-duration: 200ms; }
+
+/* Ground arrow, painted on the road; JS world-locks the rotation through --sv-rel.
+   Prominence pass (arrow r1): the box is larger and the perspective distance scales with it
+   (perspective = 5.4545 * W, the old 600px : 110px ratio), so every size keeps the old arrow's tilt and shape.
+   bottom keeps the TRANSFORMED box out of the 40px attribution band at every --sv-rel. Its lowest corner sits
+   0.456*W*P/(P - 0.73*W) - 0.3*W below the box's bottom edge at rel = +-144 deg (a top corner pointing down;
+   measured 390x844 at -134 deg matched this to 0.1 px). With P = 5.4545*W that is 0.2265*W, so
+   bottom >= 40 + 0.2265*W + ~3px margin: W 170 -> 82, W 140 -> 75, W 130 -> 73, W 88 -> 63.
+   Stroke widths are viewBox units (120 across the box), so they grow with the box: white 20, brand outline 5. */
+.sv-chevron {
+  position: absolute;
+  left: 50%;
+  bottom: 82px;
+  z-index: 2;
+  width: 170px;
+  height: 170px;
+  margin-left: -85px;
+  pointer-events: none;
+  transform-origin: 50% 70%;
+  transform: perspective(927px) rotateX(58deg) rotateZ(var(--sv-rel)) scale(var(--sv-chev-scale));
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 7px rgba(0, 0, 0, 0.35));
+  opacity: 1;
+  transition: opacity 400ms;
+}
+
+.sv-chevron[hidden] { display: none; }
+.sv-chevron.approach { opacity: 0.94; }
+.sv-chevron.fading { opacity: 0; }
+.sv-chevron svg { width: 100%; height: 100%; overflow: visible; }
+.sv-chevron .o { fill: none; stroke: var(--sv-chev-line); stroke-width: 30; stroke-linecap: round; stroke-linejoin: round; }
+.sv-chevron .o.h { fill: var(--sv-chev-line); stroke-width: 11; }
+.sv-chevron .f { fill: none; stroke: #fff; stroke-width: 20; stroke-linecap: round; stroke-linejoin: round; }
+.sv-chevron .f.h { fill: #fff; stroke-width: 1; }
+.sv-chevron.pulse svg { animation: sv-pulse 600ms ease-in-out infinite; }
+
+@keyframes sv-pulse { 50% { opacity: 0.6; } }
+
+/* ---------- HUD column: turn card, chips, stop card ---------- */
+
+.sv-hudcol {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.sv-turn {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: center;
+  max-width: min(100%, 440px);
+  padding: 10px 16px 10px 10px;
+  border-radius: 14px;
+  background: var(--sv-hud-bg);
+  color: var(--sv-hud-ink);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transition: background-color 180ms;
+}
+
+.sv-turn[hidden] { display: none; }
+.sv-turn.now { background: var(--sv-now-bg); }
+
+/* DONE ("On Queen St W") fades out over 200 ms (sv2 addition: the spec's DONE fade had no rule). */
+.sv-turn.fading { opacity: 0; transition: opacity 200ms; }
+
+.sv-turn-arrow {
+  grid-row: 1 / span 2;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.sv-turn.now .sv-turn-arrow { background: #fff; color: var(--sv-now-bg); }
+.sv-turn-arrow svg { width: 28px; height: 28px; transition: transform 180ms; }
+.sv-turn-arrow.m-left svg { transform: rotate(-90deg); }
+.sv-turn-arrow.m-right svg { transform: rotate(90deg); }
+.sv-turn-arrow.m-slight-left svg { transform: rotate(-45deg); }
+.sv-turn-arrow.m-slight-right svg { transform: rotate(45deg); }
+.sv-turn-arrow.m-sharp-left svg { transform: rotate(-135deg); }
+.sv-turn-arrow.m-sharp-right svg { transform: rotate(135deg); }
+.sv-turn-arrow.m-uturn svg { transform: rotate(180deg); }
+
+.sv-turn-dist { font-size: 26px; font-weight: 800; line-height: 1.1; white-space: nowrap; }
+
+.sv-turn-instr {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--sv-hud-soft);
+}
+
+.sv-turn.now .sv-turn-instr { color: #fff; }
+.sv-turn-then { grid-column: 1 / -1; font-size: 13px; font-weight: 700; color: var(--sv-hud-soft); }
+.sv-turn-then[hidden] { display: none; }
+
+/* NOTICE: compact one-line pill ("Turn left in 140 m") */
+.sv-turn.notice { grid-template-columns: 28px auto; padding: 6px 14px 6px 6px; border-radius: 999px; }
+.sv-turn.notice .sv-turn-arrow { grid-row: auto; width: 28px; height: 28px; border-radius: 50%; }
+.sv-turn.notice .sv-turn-arrow svg { width: 18px; height: 18px; }
+.sv-turn.notice .sv-turn-dist { font-size: 14px; font-weight: 700; }
+.sv-turn.notice .sv-turn-instr,
+.sv-turn.notice .sv-turn-then { display: none; }
+
+.sv-hudcol .sv-gap { position: static; transform: none; top: auto; left: auto; max-width: 100%; }
+
+.sv-stopcard {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 8px 16px 8px 12px;
+  border-radius: 999px;
+  background: var(--sv-hud-bg);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.sv-stopcard[hidden] { display: none; }
+
+.sv-stop-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--sv-dot, #4353f0);
+}
+
+/* ---------- End / error card ---------- */
+
+.sv-card {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, calc(100% - 32px));
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--sv-hud-bg);
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+}
+
+.sv-card[hidden] { display: none; }
+.sv-card-text { margin: 0 0 14px; font-size: 15.5px; font-weight: 700; line-height: 1.45; color: #fff; }
+.sv-card-sub { display: block; margin-top: 4px; font-size: 13.5px; font-weight: 600; color: var(--sv-hud-soft); }
+.sv-card-sub[hidden] { display: none; }
+.sv-card-actions { display: flex; justify-content: center; gap: 10px; }
+.sv-card-actions .pill-btn { min-height: 44px; padding: 10px 18px; }
+.sv-card-actions .pill-btn[hidden] { display: none; }
+
+/* ---------- Controls (static: never over the pano) ---------- */
+
+.sv-controls {
+  position: static;
+  flex: none;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: calc(var(--sv-ctl-h) + env(safe-area-inset-bottom, 0px));
+  padding: 10px calc(14px + env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
+  background: #0e1018;
+  color: #fff;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sv-scrubwrap { position: relative; flex: 1 1 auto; min-width: 0; height: 44px; display: flex; align-items: center; }
+.sv-scrubwrap #svScrub { flex: 1 1 auto; min-width: 0; margin: 0; }
+.sv-ticks { position: absolute; left: 8px; right: 8px; top: 3px; height: 10px; pointer-events: none; }
+.sv-tick { position: absolute; top: 1px; width: 2px; height: 8px; margin-left: -1px; border-radius: 1px; background: var(--sv-tick); }
+.sv-tick.stop { top: 0; width: 4px; height: 10px; margin-left: -2px; background: var(--sv-dot, #4353f0); }
+.sv-buf { position: absolute; left: 8px; bottom: 5px; height: 3px; width: 0; border-radius: 2px; background: var(--sv-buf); pointer-events: none; }
+
+.sv-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.sv-overlay :focus-visible { outline: 3px solid var(--sv-accent); outline-offset: 2px; }
+
+/* Map control (desktop), pushed into RR.map.controls[TOP_LEFT] */
+.sv-follow {
+  margin: 10px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+  background: var(--card-raised);
+  color: var(--ink-soft);
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.sv-follow[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 860px) {
+  /* 72px = the app.css topbar (10px + safe-top padding, 44px close button, 18px gradient tail):
+     the spec's 60px put the HUD 12px inside the topbar box (Y2: HUD top >= topbar bottom). */
+  .sv-hudcol { top: calc(72px + env(safe-area-inset-top, 0px)); }
+  /* Phones (feel r1): the 88px arrow drew a ~40px thin white glyph that vanished on light pavement at arm's
+     length. Arrow r1: 140px box (perspective 5.4545*W, bottom 43 + 0.2265*W), same viewBox strokes as desktop. */
+  .sv-chevron { width: 140px; height: 140px; margin-left: -70px; bottom: 75px;
+    transform: perspective(764px) rotateX(58deg) rotateZ(var(--sv-rel)) scale(var(--sv-chev-scale)); }
+  .sv-controls :focus-visible { outline-color: #fff; }
+}
+
+@media (max-width: 860px) and (max-height: 500px) {
+  .sv-controls { --sv-ctl-h: 60px; padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+  /* 72px: the topbar keeps its full 72px height in landscape too (app.css), so 52px put the HUD under it. */
+  .sv-hudcol { right: auto; max-width: 46%; align-items: flex-start; top: calc(72px + env(safe-area-inset-top, 0px)); }
+  .sv-chevron { width: 88px; height: 88px; margin-left: -44px; bottom: 63px;
+    transform: perspective(480px) rotateX(58deg) rotateZ(var(--sv-rel)) scale(var(--sv-chev-scale)); }
+}
+
+/* ---------- Desktop: side dock replacing the planner column ---------- */
+
+@media (min-width: 861px) {
+  body.sv-open .panel,
+  body.sv-open .statsbar { display: none; }
+
+  body.sv-open .sv-overlay {
+    position: relative;
+    inset: auto;
+    order: -1;
+    flex: 0 0 var(--sv-w);
+    width: var(--sv-w);
+    max-width: calc(100vw - 420px);
+    height: 100%;
+    z-index: 16;
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+  }
+
+  body.sv-open .sv-overlay[hidden] { display: none; }
+
+  body.sv-open .sv-topbar {
+    position: static;
+    flex: none;
+    padding: 10px 14px;
+    background: var(--card-raised);
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+  }
+
+  body.sv-open .sv-close { width: 40px; height: 40px; background: var(--field-bg); color: var(--ink-soft); border: 1.5px solid var(--line); }
+  body.sv-open .sv-close:hover { border-color: var(--brand-hi); color: var(--brand-hi); }
+
+  body.sv-open .sv-controls {
+    background: var(--card-raised);
+    color: var(--ink);
+    border-top: 1px solid var(--line);
+    --sv-tick: var(--ink-faint);
+    --sv-buf: var(--brand-tint-hover);
+  }
+
+  body.sv-open .sv-btn { background: var(--field-bg); color: var(--ink-soft); border: 1.5px solid var(--line); }
+  body.sv-open .sv-btn:hover { border-color: var(--brand-hi); color: var(--brand-hi); }
+  body.sv-open .sv-btn.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+  body.sv-open .sv-btn.primary:hover { background: var(--brand-dark); color: #fff; }
+  body.sv-open #svScrub { accent-color: var(--sv-accent); }
+}
+
+/* Short desktop windows: a smaller ground arrow keeps clear of the HUD column (perspective 5.4545*W). */
+@media (min-width: 861px) and (max-height: 700px) {
+  .sv-chevron { width: 130px; height: 130px; margin-left: -65px; bottom: 73px;
+    transform: perspective(709px) rotateX(58deg) rotateZ(var(--sv-rel)) scale(var(--sv-chev-scale)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sv-dim, .sv-turn, .sv-turn.fading, .sv-turn-arrow svg, .sv-chevron { transition: none; }
+  .sv-chevron.pulse svg { animation: none; }
+}

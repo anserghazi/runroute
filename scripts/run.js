@@ -779,8 +779,11 @@ window.RRRun = (function () {
     } catch (e) { /* ignore */ }
     try {
       if (RR.markers && RR.markers.forEach) {
-        RR.markers.forEach(function (m) {
-          try { m.setClickable(on); } catch (e) { /* ignore */ }
+        RR.markers.forEach(function (m, id) {
+          // Back on after a run: app.js decides per marker (faint unpicked dots stay
+          // display-only on phones while a route exists).
+          var c = on && (typeof markerClickable !== "function" || markerClickable(RR.selected.has(id)));
+          try { m.setClickable(c); } catch (e) { /* ignore */ }
         });
       }
     } catch (e) { /* ignore */ }

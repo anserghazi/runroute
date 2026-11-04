@@ -17,20 +17,31 @@
 
   function isMobile() { return mql ? mql.matches : false; }
 
+  var settledFns = [];
+
   // #mapwrap's bottom edge follows data-sheet in CSS; the map must re-measure afterwards.
-  function kickMap() {
+  // `settled` listeners run once the map has re-measured (after a state change only).
+  function kickMap(notify) {
     if (map && window.google && google.maps && google.maps.event) {
-      setTimeout(function () { google.maps.event.trigger(map, "resize"); }, 300);
+      setTimeout(function () {
+        google.maps.event.trigger(map, "resize");
+        if (notify) {
+          settledFns.forEach(function (fn) {
+            try { fn(state); } catch (err) { /* a listener must not break the sheet */ }
+          });
+        }
+      }, 300);
     }
   }
 
   function setState(next) {
     if (STATES.indexOf(next) === -1) return;
+    var changed = next !== state;
     state = next;
     if (!isMobile()) return;
     document.body.setAttribute("data-sheet", next);
     if (panel) panel.style.transform = "";
-    kickMap();
+    kickMap(changed);
   }
 
   function getState() { return state; }
@@ -198,6 +209,10 @@
   window.RRSheet = {
     setState: setState,
     getState: getState,
+    // fn(state) runs after a state change, once the map has been resized to the new size.
+    onSettled: function (fn) {
+      if (typeof fn === "function") settledFns.push(fn);
+    },
     raiseForInput: function () {
       if (isMobile() && state === "peek") setState("half");
     },

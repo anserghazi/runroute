@@ -80,6 +80,17 @@
   --cat-gym-bg: #e4f4fa;
   --cat-gym-ink: #076385;
 
+  /* Selected category chips: solid fill under --chip-on-ink. Light fills are the category
+     hues darkened until white text clears 4.5:1 (park 5.03, sight 5.67, cafe 5.93,
+     gym 5.40); dark-theme fills are lightened under near-black ink (see dark blocks).
+     scripts/app.js CAT_FILL mirrors these light fills for the map's numbered stop badges. */
+  --cat-park-fill: #0d7f52;
+  --cat-sight-fill: #b8326a;
+  --cat-cafe-fill: #8a5a00;
+  --cat-gym-fill: #06729b;
+  --chip-on-ink: #ffffff;
+  --chip-line: #c9c4a2; /* unselected chip outline, stronger than --line */
+
   --radius: 16px;
   --font: "Raleway", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mark: "Montserrat Subrayada", var(--font);
@@ -151,6 +162,14 @@
     --cat-cafe-ink: #e5c485;
     --cat-gym-bg: #193f5b;
     --cat-gym-ink: #8ad1eb;
+
+    /* near-black ink on lightened fills: park 9.98, sight 8.28, cafe 10.25, gym 9.68 */
+    --cat-park-fill: #5fd3a1;
+    --cat-sight-fill: #f28fb8;
+    --cat-cafe-fill: #f2b743;
+    --cat-gym-fill: #5cc8f0;
+    --chip-on-ink: #0f1320;
+    --chip-line: #48506e;
   }
 }
 
@@ -219,6 +238,14 @@
   --cat-cafe-ink: #e5c485;
   --cat-gym-bg: #193f5b;
   --cat-gym-ink: #8ad1eb;
+
+  /* near-black ink on lightened fills: park 9.98, sight 8.28, cafe 10.25, gym 9.68 */
+  --cat-park-fill: #5fd3a1;
+  --cat-sight-fill: #f28fb8;
+  --cat-cafe-fill: #f2b743;
+  --cat-gym-fill: #5cc8f0;
+  --chip-on-ink: #0f1320;
+  --chip-line: #48506e;
 }
 
 /* Global rules that belong with the tokens */

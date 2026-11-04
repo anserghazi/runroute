@@ -9,7 +9,8 @@
      .panel (sheet) ........ 15
      #moreMenu ............. inside .statsbar (position:relative)
      .run-ui ............... 40  (container pointer-events:none)
-     .sv-overlay ........... 60
+     .sv-overlay ........... 60 mobile (fixed) / 16 desktop dock (in flow) — see sim.css
+                             inside .sv-stage: #svPano 0, .sv-dim 1, .sv-chevron 2, .sv-hudcol 3, .sv-card 4; .sv-topbar 5
      <dialog> .............. top layer (::backdrop = var(--scrim))
      .toast ................ 100
 
@@ -247,41 +248,62 @@ button { font-family: var(--font); cursor: pointer; }
   gap: 8px;
 }
 
+/* Off = neutral outlined pill with a hollow category ring.
+   On  = solid category fill (--cat-*-fill, contrast-checked against --chip-on-ink in
+   both themes, see theme.css) + a check mark in place of the ring + a lift shadow,
+   so the state never rests on hue alone. */
 .chip {
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--chip-line);
   background: var(--field-bg);
   color: var(--ink-soft);
   font-size: 13.5px;
   font-weight: 700;
   border-radius: 999px;
-  padding: 7px 14px;
+  padding: 7px 14px 7px 12px;
   display: inline-flex;
   align-items: center;
-  transition: all 0.15s;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
-.chip[data-type="park"] { --cat: var(--cat-park); --cat-bg: var(--cat-park-bg); --cat-ink: var(--cat-park-ink); }
-.chip[data-type="tourist_attraction"] { --cat: var(--cat-sight); --cat-bg: var(--cat-sight-bg); --cat-ink: var(--cat-sight-ink); }
-.chip[data-type="cafe"] { --cat: var(--cat-cafe); --cat-bg: var(--cat-cafe-bg); --cat-ink: var(--cat-cafe-ink); }
-.chip[data-type="gym"] { --cat: var(--cat-gym); --cat-bg: var(--cat-gym-bg); --cat-ink: var(--cat-gym-ink); }
+.chip[data-type="park"] { --cat: var(--cat-park); --cat-fill: var(--cat-park-fill); }
+.chip[data-type="tourist_attraction"] { --cat: var(--cat-sight); --cat-fill: var(--cat-sight-fill); }
+.chip[data-type="cafe"] { --cat: var(--cat-cafe); --cat-fill: var(--cat-cafe-fill); }
+.chip[data-type="gym"] { --cat: var(--cat-gym); --cat-fill: var(--cat-gym-fill); }
 
 .chip::before {
   content: "";
+  box-sizing: border-box;
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  flex: none;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: var(--cat);
+  border: 2px solid var(--cat-fill);
+  background: transparent;
   margin-right: 7px;
 }
 
-.chip:hover { border-color: var(--cat); color: var(--ink); }
+.chip:hover { border-color: var(--cat-fill); color: var(--ink); }
 
 .chip[aria-pressed="true"] {
-  background: var(--cat-bg);
-  color: var(--cat-ink);
-  border-color: var(--cat);
+  background: var(--cat-fill);
+  color: var(--chip-on-ink);
+  border-color: var(--cat-fill);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 3px 10px -2px var(--cat-fill);
 }
+
+/* Check mark drawn from two borders of a rotated box, in the chip's text color */
+.chip[aria-pressed="true"]::before {
+  width: 6px;
+  height: 11px;
+  border-radius: 0;
+  border: solid currentColor;
+  border-width: 0 2.5px 2.5px 0;
+  transform: translateY(-1px) rotate(45deg);
+  margin: 0 10px 0 3px;
+}
+
+.chip[aria-pressed="true"]:hover { color: var(--chip-on-ink); filter: brightness(1.06); }
 
 /* ---------------- Saved routes ---------------- */
 
@@ -1237,12 +1259,14 @@ dialog label { display: block; font-size: 13px; font-weight: 700; color: var(--i
 
   .chip { min-height: 44px; }
 
-  /* #mapwrap already ends at the sheet's top edge, so the bar sits a fixed 12px above it */
+  /* #mapwrap already ends at the sheet's top edge, so the bar sits a fixed distance above it: 32px clears
+     Google's logo (66x26 at the map's bottom-left) and the attribution row, which the Maps terms keep visible
+     (at 12px the bar hid half the wordmark in the planning state). */
   .statsbar {
     z-index: 20;
     left: 10px;
     right: 10px;
-    bottom: 12px;
+    bottom: 32px;
     max-width: calc(100% - 20px);
     column-gap: 12px;
     padding: 10px 12px;
@@ -1269,8 +1293,15 @@ dialog label { display: block; font-size: 13px; font-weight: 700; color: var(--i
 @media (max-width: 480px) {
   #previewBtn .btn-text, #saveRouteBtn .btn-text { display: none; }
   #previewBtn, #saveRouteBtn { width: 48px; padding: 9px 0; }
-  .stat { min-width: 48px; }
-  .statsbar select { max-width: 150px; }
+  /* Stats + pace on ONE row (it used to wrap the pace select onto a row of its own, a
+     164 px bar that left the half-state route ~190 px of map). Still flex-wrap, so an
+     unusually long value degrades to the old two-row layout rather than overflowing. */
+  .statsbar { row-gap: 8px; }
+  .stats-cluster { column-gap: 10px; }
+  .stat { min-width: 0; }
+  .stat .value { font-size: 15px; }
+  .stat .label { font-size: 10px; letter-spacing: 0.4px; }
+  .statsbar select { max-width: 132px; font-size: 13px; padding: 6px 4px; }
 }
 
 @media (max-width: 360px) {
